@@ -6,10 +6,14 @@ in vec2 texCoord;
 
 out vec4 FragColor;
 
-uniform float mixValue;
 
 uniform sampler2D container;
 uniform sampler2D face;
+
+uniform int shininess;
+uniform float mixValue;
+uniform float ambientStrength;
+uniform float specularStrength;
 
 uniform vec3 objectColor;
 uniform vec3 lightColor;
@@ -20,7 +24,6 @@ void main() {
     // FragColor = mix(texture(container, texCoord), texture(face, texCoord), mixValue);
 
     // ambient lighting
-    float ambientStrength = 0.1f;
     vec3 ambient = ambientStrength * lightColor;
 
     // diffuse lighting
@@ -32,8 +35,6 @@ void main() {
     vec3 viewDir = normalize(viewPos - fragPos);
     // lightDir is the direction from the fragment to the light source, so we negate it
     vec3 reflectDir = reflect(-lightDir, norm);
-    float specularStrength = 0.5f;
-    int shininess = 128;
     float spec = pow(max(dot(viewDir, reflectDir), 0.0f), shininess);
     vec3 specular = specularStrength * spec * lightColor;
 

@@ -36,7 +36,7 @@ public:
 protected:
     virtual void update();
 
-    void baseWidgets() const;
+    void baseWidgets();
 
     glm::vec3 m_position;
     glm::vec3 m_direction{};

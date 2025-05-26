@@ -90,13 +90,14 @@ void Camera::update() {
     m_lookAt = glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
-void Camera::baseWidgets() const {
+void Camera::baseWidgets() {
     std::stringstream ss;
     ss << "position: (" << std::setprecision(3) << m_position.x << "," <<
             m_position.y << "," << m_position.z << ")";
     const auto position = ss.str();
     ImGui::SeparatorText("Camera");
     ImGui::Text(position.c_str());
+    ImGui::SliderFloat("speed", &m_speed, 0.1f, 10.0f);
 }
 
 CameraFps::CameraFps(const glm::vec3 &position, float speed): Camera{position, speed} {
