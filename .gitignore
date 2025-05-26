@@ -1,0 +1,8 @@
+libglfw3.a
+glfw3.lib
+*.exe
+*.ilk
+*.pdb
+cmake-build-debug/
+imgui.ini
+.idea/
