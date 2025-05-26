@@ -14,9 +14,12 @@ uniform mat4 view;
 uniform mat4 projection;
 
 void main() {
-    vec4 worldPos = model * vec4(aPos, 1.0f);
+    //    vec4 worldPos = model * vec4(aPos, 1.0f);
+    vec4 viewPos = view * model * vec4(aPos, 1.0f); // in view space
     normal = normalMatrix * aNormal;
-    fragPos = vec3(worldPos);
+    //    fragPos = vec3(worldPos);
+    fragPos = vec3(viewPos);
     texCoord = aTexCoord;
-    gl_Position = projection * view * worldPos;
+    //    gl_Position = projection * view * worldPos;
+    gl_Position = projection * viewPos;
 }

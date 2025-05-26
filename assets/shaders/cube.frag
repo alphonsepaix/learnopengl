@@ -21,7 +21,6 @@ uniform vec3 lightPos;
 uniform vec3 viewPos;
 
 void main() {
-    // FragColor = mix(texture(container, texCoord), texture(face, texCoord), mixValue);
 
     // ambient lighting
     vec3 ambient = ambientStrength * lightColor;
@@ -32,7 +31,8 @@ void main() {
     vec3 diffuse = max(dot(norm, lightDir), 0.0f) * lightColor;
 
     // specular lighting
-    vec3 viewDir = normalize(viewPos - fragPos);
+    //    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 viewDir = normalize(-fragPos); // in view space
     // lightDir is the direction from the fragment to the light source, so we negate it
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0f), shininess);

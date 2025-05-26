@@ -315,7 +315,8 @@ int main() {
         cubeShader.setFloat("specularStrength", specularStrength);
         cubeShader.setVec3("objectColor", objectColor);
         cubeShader.setVec3("lightColor", lightColor);
-        cubeShader.setVec3("lightPos", lightPos);
+        // cubeShader.setVec3("lightPos", lightPos);
+        cubeShader.setVec3("lightPos", view * glm::vec4(lightPos, 1.0f)); // in view space
         cubeShader.setVec3("viewPos", instance.getActiveCamera()->getPosition());
         for (std::size_t i = 0; const auto &[cubeCenter, cubeScale]: cubes) {
             auto model = glm::mat4(1.0f);
@@ -344,7 +345,8 @@ int main() {
                           1.0f) *
                 scale * cubeScale);
 
-            auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+            // auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+            auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(view * model))); // in view space
 
             cubeShader.setMat3("normalMatrix", normalMatrix);
             cubeShader.setMat4("model", model);
