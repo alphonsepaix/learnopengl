@@ -20,7 +20,7 @@
 
 auto WINDOW_WIDTH = 1200;
 auto WINDOW_HEIGHT = 800;
-auto WINDOW_TITLE = "Learn OpenGL";
+constexpr auto WINDOW_TITLE = "Learn OpenGL";
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -94,47 +94,47 @@ int main() {
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
     constexpr std::array vertices = {
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
 
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 
-        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
 
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
     };
 
     GLuint vao;
@@ -145,12 +145,27 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
                  vertices.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                           static_cast<GLvoid *>(nullptr));
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                           reinterpret_cast<GLvoid *>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                          reinterpret_cast<GLvoid *>(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    GLuint lightVao;
+    glGenVertexArrays(1, &lightVao);
+    glBindVertexArray(lightVao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                          static_cast<GLvoid *>(nullptr));
+    glEnableVertexAttribArray(0);
+    auto lightModel = glm::mat4(1.0f);
+    auto lightPos = glm::vec3(0.0f, 0.0f, -2.0f);
+    lightModel = glm::translate(lightModel, lightPos);
+    lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 
     // Unbind everything.
     glBindVertexArray(0);
@@ -179,16 +194,27 @@ int main() {
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    const auto shaderProgram = Shader("assets/shaders/shader.vert",
-                                      "assets/shaders/shader.frag");
-    shaderProgram.use();
-    shaderProgram.setInt("container", 0);
-    shaderProgram.setInt("face", 1);
+    constexpr auto lightColor = glm::vec3(0.0f, 1.0f, 1.0f);
+    constexpr auto objectColor = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    const auto cubeShader = Shader("assets/shaders/cube.vert",
+                                   "assets/shaders/cube.frag");
+    cubeShader.use();
+    cubeShader.setInt("container", 0);
+    cubeShader.setInt("face", 1);
+    cubeShader.setVec3("objectColor", objectColor);
+    cubeShader.setVec3("lightColor", lightColor);
+    cubeShader.setVec3("lightPos", lightPos);
+
+    const auto lightShader = Shader("assets/shaders/light.vert", "assets/shaders/light.frag");
+    lightShader.use();
+    lightShader.setVec3("lightColor", lightColor);
+    lightShader.setMat4("model", lightModel);
 
     auto wireframe = false;
     auto mirrorX = false;
     auto mirrorY = false;
-    auto bgColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    auto bgColor = glm::vec3(0.0f);
     auto offsetX = 0.0f;
     auto offsetY = 0.0f;
     auto offsetZ = 0.0f;
@@ -256,9 +282,25 @@ int main() {
         containerTexture.setUnit(0);
         faceTexture.setUnit(1);
 
-        shaderProgram.use();
-        shaderProgram.setFloat("mixValue", mixValue);
+        auto view = instance.getActiveCamera()->lookAt();
+        auto projection = glm::perspective(glm::radians(fov),
+                                           static_cast<float>(WINDOW_WIDTH)
+                                           /
+                                           static_cast<float>(
+                                               WINDOW_HEIGHT),
+                                           0.1f, 100.0f);
 
+        // Render the light source.
+        lightShader.use();
+        lightShader.setMat4("view", view);
+        lightShader.setMat4("projection", projection);
+        glBindVertexArray(lightVao);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // Render the cubes;
+        cubeShader.use();
+        cubeShader.setFloat("mixValue", mixValue);
+        cubeShader.setVec3("viewPos", instance.getActiveCamera()->getPosition());
         for (std::size_t i = 0; const auto &[cubeCenter, cubeScale]: cubes) {
             auto model = glm::mat4(1.0f);
             model = glm::translate(model, cubeCenter);
@@ -285,16 +327,13 @@ int main() {
                 glm::vec3(mirrorX ? -1.0f : 1.0f, mirrorY ? -1.0f : 1.0f,
                           1.0f) *
                 scale * cubeScale);
-            auto view = instance.getActiveCamera()->lookAt();
-            auto projection = glm::perspective(glm::radians(fov),
-                                               static_cast<float>(WINDOW_WIDTH)
-                                               /
-                                               static_cast<float>(
-                                                   WINDOW_HEIGHT),
-                                               0.1f, 100.0f);
-            shaderProgram.setMat4("model", model);
-            shaderProgram.setMat4("view", view);
-            shaderProgram.setMat4("projection", projection);
+
+            auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+
+            cubeShader.setMat3("normalMatrix", normalMatrix);
+            cubeShader.setMat4("model", model);
+            cubeShader.setMat4("view", view);
+            cubeShader.setMat4("projection", projection);
             glBindVertexArray(vao);
             glDrawArrays(GL_TRIANGLES, 0, 36);
             ++i;
