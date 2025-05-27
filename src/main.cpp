@@ -196,6 +196,8 @@ int main() {
 
     const auto cubeShader = Shader("assets/shaders/cube.vert",
                                    "assets/shaders/cube.frag");
+    // const auto cubeShader = Shader("assets/shaders/gouraud.vert",
+    //                                "assets/shaders/gouraud.frag");
     cubeShader.use();
     cubeShader.setInt("container", 0);
     cubeShader.setInt("face", 1);
@@ -292,9 +294,9 @@ int main() {
                                            100.0f);
 
         auto lightModel = glm::mat4(1.0f);
-        auto lightRadius = 5.0f;
-        lightPos = glm::vec3(lightRadius * std::sin(lastFrame),
-                             lightRadius * std::cos(lastFrame), -2.0f);
+        // auto lightRadius = 5.0f;
+        // lightPos = glm::vec3(lightRadius * std::sin(lastFrame),
+        //                      lightRadius * std::cos(lastFrame), -2.0f);
         lightModel = glm::translate(lightModel, lightPos);
         lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 
