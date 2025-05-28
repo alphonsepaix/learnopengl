@@ -25,7 +25,7 @@ public:
         return m_position;
     }
 
-    virtual void renderWidgets();
+    virtual void widgets();
 
     virtual void move(const Direction &direction, float deltaTime);
 
@@ -78,7 +78,7 @@ public:
 
     void setTarget(const glm::vec3 &target);
 
-    void renderWidgets() override;
+    void widgets() override;
 
     void copy(Camera *camera) override;
 
@@ -109,7 +109,7 @@ public:
 
     void setActiveCamera(Type camera);
 
-    void renderWidgets();
+    void widgets();
 
 private:
     CameraManager();

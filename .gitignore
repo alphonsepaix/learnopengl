@@ -1,5 +1,6 @@
 libglfw3.a
 glfw3.lib
+LearnOpenGL
 *.exe
 *.ilk
 *.pdb

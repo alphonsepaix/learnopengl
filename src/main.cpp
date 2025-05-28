@@ -8,11 +8,9 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-#include "stb_image.h"
 
 #include "Shader.h"
 #include "Camera.h"
-#include "Texture.h"
 
 #include <array>
 #include <iostream>
@@ -50,6 +48,35 @@ void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
 
 void processInput(GLFWwindow *window);
 
+struct Material {
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    int shininessPower;
+    float shininess;
+    void widgets() {
+        ImGui::ColorEdit3("Object ambient", glm::value_ptr(ambient));
+        ImGui::ColorEdit3("Object diffuse", glm::value_ptr(diffuse));
+        ImGui::ColorEdit3("Object specular", glm::value_ptr(specular));
+        ImGui::SliderInt("Shininess", &shininessPower, 1, 8);
+        ImGui::SameLine();
+        shininess = static_cast<float>(std::pow(2, shininessPower));
+        ImGui::Text(std::to_string(static_cast<int>(shininess)).c_str());
+    }
+};
+
+struct Light {
+    glm::vec3 position;
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    void widgets() {
+        ImGui::SliderFloat3("Position", glm::value_ptr(position), -10.0f, 10.0f);
+        ImGui::ColorEdit3("Light ambient", glm::value_ptr(ambient));
+        ImGui::ColorEdit3("Light diffuse", glm::value_ptr(diffuse));
+        ImGui::ColorEdit3("Light specular", glm::value_ptr(specular));
+    }
+};
 
 int main() {
     // auto alone will strip the reference, giving errors (we deleted the copy and assignment constructors).
@@ -79,6 +106,7 @@ int main() {
 
     // Tell OpenGL the size of our rendering window so it can display data and coordinates correctly.
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glfwSwapInterval(1);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -162,63 +190,35 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                           static_cast<GLvoid *>(nullptr));
     glEnableVertexAttribArray(0);
-    auto lightPos = glm::vec3(0.0f, 0.0f, -2.0f);
 
     // Unbind everything.
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    stbi_set_flip_vertically_on_load(true);
-
-    const auto containerTexture = Texture("assets/textures/container.jpg",
-                                          Texture::Type::Texture2D,
-                                          Texture::Format::RGB);
-    containerTexture.bind();
-    containerTexture.setWrap(Texture::Wrap::Repeat, Texture::Wrap::Repeat);
-    containerTexture.setFilter(Texture::Filter::LinearMipmapLinear,
-                               Texture::Filter::Linear);
-
-    const auto faceTexture = Texture("assets/textures/face.png",
-                                     Texture::Type::Texture2D,
-                                     Texture::Format::RGBA);
-    faceTexture.bind();
-    faceTexture.setWrap(Texture::Wrap::ClampToEdge,
-                        Texture::Wrap::MirroredRepeat);
-    faceTexture.setFilter(Texture::Filter::LinearMipmapLinear,
-                          Texture::Filter::Linear);
-    constexpr auto borderColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    faceTexture.setBorderColor(glm::value_ptr(borderColor));
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    auto lightColor = glm::vec3(0.0f, 1.0f, 1.0f);
-    auto objectColor = glm::vec3(0.0f, 1.0f, 0.0f);
-
     const auto cubeShader = Shader("assets/shaders/cube.vert",
                                    "assets/shaders/cube.frag");
-    // const auto cubeShader = Shader("assets/shaders/gouraud.vert",
-    //                                "assets/shaders/gouraud.frag");
-    cubeShader.use();
-    cubeShader.setInt("container", 0);
-    cubeShader.setInt("face", 1);
-
     const auto lightShader = Shader("assets/shaders/light.vert", "assets/shaders/light.frag");
 
+    bool isPaused = false;
+    auto backgroundColor = glm::vec3(0.0f);
     auto wireframe = false;
-    auto mirrorX = false;
-    auto mirrorY = false;
-    auto bgColor = glm::vec3(0.0f);
-    auto offsetX = 0.0f;
-    auto offsetY = 0.0f;
-    auto offsetZ = 0.0f;
-    auto scale = 1.0f;
-    auto mixValue = 0.5f;
-    bool paused = false;
-    auto angleCube = 0.0f; // degrees
-    auto shininess = 128; // 2^7 = 128 by default
-    auto shininessPower = 7;
-    auto ambientStrength = 0.1f;
-    auto specularStrength = 0.5f;
+
+    auto cubeGlobalScale = 1.0f;
+    auto cubeRotationAngle = 0.0f; // in degrees
+    auto cubeTranslation = glm::vec3(0.0f);
+    auto objectMaterial = Material {
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.5f),
+        7, 128
+    };
+
+    auto light = Light {
+        glm::vec3(0.0f, 0.0, -2.0f),
+        glm::vec3(0.2f),
+        glm::vec3(0.5f),
+        glm::vec3(1.0f),
+    };
 
     auto cubes = std::to_array<std::tuple<glm::vec3, float> >({
         {glm::vec3(0.0f, 0.0f, 0.0f), 1.2f},
@@ -234,50 +234,47 @@ int main() {
     });
 
     while (!glfwWindowShouldClose(window)) {
+        const auto currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         processInput(window);
+
+        glClearColor(backgroundColor.r, backgroundColor.g, backgroundColor.b, 1.0); // state-setting
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // state-using
 
         // Start the Dear ImGui frame.
         ImGui_ImplGlfw_NewFrame();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui::NewFrame();
 
+        std::stringstream ss;
+        auto fps = static_cast<int>(1 / deltaTime);
+        ss << "Application average: " << deltaTime * 1000 << "ms/frame (" << fps << " FPS)\n";
+        auto performanceStr = ss.str();
+        ImGui::Text(performanceStr.c_str());
+
         ImGui::SeparatorText("Window");
-        ImGui::Text(("width: " + std::to_string(WINDOW_WIDTH)).c_str());
-        ImGui::Text(("height: " + std::to_string(WINDOW_HEIGHT)).c_str());
-        ImGui::ColorEdit3("##ColorPicker#1", glm::value_ptr(bgColor));
+        ImGui::Text(("Width: " + std::to_string(WINDOW_WIDTH)).c_str());
+        ImGui::SameLine();
+        ImGui::Text(("Height: " + std::to_string(WINDOW_HEIGHT)).c_str());
+        ImGui::ColorEdit3("Background", glm::value_ptr(backgroundColor));
 
         // Objects
-        ImGui::SeparatorText("Objects");
-        ImGui::Checkbox("wireframe", &wireframe);
-        ImGui::Checkbox("mirror x", &mirrorX);
-        ImGui::SameLine();
-        ImGui::Checkbox("mirror y", &mirrorY);
-        ImGui::SliderFloat("offset x", &offsetX, -10.0f, 10.0f);
-        ImGui::SliderFloat("offset y", &offsetY, -10.0f, 10.0f);
-        ImGui::SliderFloat("offset z", &offsetZ, -10.0f, 10.0f);
-        ImGui::SliderFloat("scale", &scale, 0.0f, 10.0f);
-        ImGui::SliderFloat("mix", &mixValue, 0.0f, 1.0f);
-        ImGui::Checkbox("rotation", &paused);
-        ImGui::SliderInt("shininess", &shininessPower, 1, 8);
-        ImGui::SameLine();
-        shininess = static_cast<int>(std::pow(2, shininessPower));
-        ImGui::Text(std::to_string(shininess).c_str());
-        ImGui::ColorEdit3("##ColorPicker#2", glm::value_ptr(objectColor));
+        ImGui::SeparatorText("Cubes");
+        ImGui::Checkbox("Wireframe", &wireframe);
+        ImGui::SliderFloat3("Offset", glm::value_ptr(cubeTranslation), -10.0f, 10.0f);
+        ImGui::SliderFloat("Scale", &cubeGlobalScale, 0.0f, 10.0f);
+        ImGui::Checkbox("Pause rotation", &isPaused);
+        objectMaterial.widgets();
 
         // Light
         ImGui::SeparatorText("Light");
-        ImGui::ColorEdit3("##ColorPicker#3", glm::value_ptr(lightColor));
-        ImGui::SliderFloat("ambient", &ambientStrength, 0.0f, 1.0f);
-        ImGui::SliderFloat("specular", &specularStrength, 0.0f, 1.0f);
+        light.widgets();
 
-        instance.getActiveCamera()->renderWidgets(); // camera widget
-        instance.renderWidgets(); // switch camera
-
-        ImGui::SeparatorText("Other");
-        ImGui::Text(("fov: " + std::to_string(fov)).c_str());
-
-        glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0); // state-setting
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // state-using
+        ImGui::SeparatorText("Camera");
+        instance.widgets(); // switch camera
+        instance.getActiveCamera()->widgets(); // camera widget
 
         if (wireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -285,19 +282,13 @@ int main() {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
 
-        containerTexture.setUnit(0);
-        faceTexture.setUnit(1);
-
         auto view = instance.getActiveCamera()->lookAt();
         auto projection = glm::perspective(glm::radians(fov),
                                            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f,
                                            100.0f);
 
         auto lightModel = glm::mat4(1.0f);
-        // auto lightRadius = 5.0f;
-        // lightPos = glm::vec3(lightRadius * std::sin(lastFrame),
-        //                      lightRadius * std::cos(lastFrame), -2.0f);
-        lightModel = glm::translate(lightModel, lightPos);
+        lightModel = glm::translate(lightModel, light.position);
         lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 
         // Render the light source.
@@ -305,25 +296,25 @@ int main() {
         lightShader.setMat4("model", lightModel);
         lightShader.setMat4("view", view);
         lightShader.setMat4("projection", projection);
-        lightShader.setVec3("lightColor", lightColor);
+        lightShader.setVec3("lightColor", light.diffuse);
         glBindVertexArray(lightVao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // Render the cubes;
         cubeShader.use();
-        cubeShader.setInt("shininess", shininess);
-        cubeShader.setFloat("mixValue", mixValue);
-        cubeShader.setFloat("ambientStrength", ambientStrength);
-        cubeShader.setFloat("specularStrength", specularStrength);
-        cubeShader.setVec3("objectColor", objectColor);
-        cubeShader.setVec3("lightColor", lightColor);
-        // cubeShader.setVec3("lightPos", lightPos);
-        cubeShader.setVec3("lightPos", view * glm::vec4(lightPos, 1.0f)); // in view space
+        cubeShader.setVec3("material.ambient", objectMaterial.ambient);
+        cubeShader.setVec3("material.diffuse", objectMaterial.diffuse);
+        cubeShader.setVec3("material.specular", objectMaterial.specular);
+        cubeShader.setFloat("material.shininess", objectMaterial.shininess);
+        cubeShader.setVec3("light.ambient", light.ambient);
+        cubeShader.setVec3("light.diffuse", light.diffuse);
+        cubeShader.setVec3("light.specular", light.specular);
+        cubeShader.setVec3("light.position", light.position);
         cubeShader.setVec3("viewPos", instance.getActiveCamera()->getPosition());
         for (std::size_t i = 0; const auto &[cubeCenter, cubeScale]: cubes) {
             auto model = glm::mat4(1.0f);
             model = glm::translate(model, cubeCenter);
-            model = glm::translate(model, glm::vec3(offsetX, offsetY, offsetZ));
+            model = glm::translate(model, cubeTranslation);
             glm::vec3 rotAxis;
             switch (i % 3) {
                 case 0:
@@ -336,19 +327,14 @@ int main() {
                     rotAxis = glm::vec3(0.0f, 0.0f, 1.0f);
                     break;
             }
-            if (!paused)
-                angleCube += 1.0f;
+            if (!isPaused)
+                cubeRotationAngle += 1.0f;
             auto speed = 0.1f;
-            model = glm::rotate(model, glm::radians(angleCube) * speed,
+            model = glm::rotate(model, glm::radians(cubeRotationAngle) * speed,
                                 rotAxis);
-            model = glm::scale(
-                model,
-                glm::vec3(mirrorX ? -1.0f : 1.0f, mirrorY ? -1.0f : 1.0f,
-                          1.0f) *
-                scale * cubeScale);
+            model = glm::scale(model, glm::vec3(cubeGlobalScale));
 
-            // auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-            auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(view * model))); // in view space
+            auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
 
             cubeShader.setMat3("normalMatrix", normalMatrix);
             cubeShader.setMat4("model", model);
@@ -361,13 +347,8 @@ int main() {
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glfwSwapBuffers(window); // double buffering
         glfwPollEvents();
-
-        const auto currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
     }
 
     ImGui_ImplGlfw_Shutdown();

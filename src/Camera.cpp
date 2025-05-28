@@ -20,9 +20,9 @@ Camera::Camera(const glm::vec3 &position, const float speed): m_position{positio
 }
 
 
-void Camera::renderWidgets() {
+void Camera::widgets() {
     baseWidgets();
-    ImGui::Checkbox("invert y axis", &m_invertYAxis);
+    ImGui::Checkbox("Invert y axis", &m_invertYAxis);
 }
 
 void Camera::move(const Direction &direction, const float deltaTime) {
@@ -92,25 +92,37 @@ void Camera::update() {
 
 void Camera::baseWidgets() {
     std::stringstream ss;
-    ss << "position: (" << std::setprecision(3) << m_position.x << "," <<
+    ss << "Position: (" << std::setprecision(3) << m_position.x << "," <<
             m_position.y << "," << m_position.z << ")";
     const auto position = ss.str();
-    ImGui::SeparatorText("Camera");
     ImGui::Text(position.c_str());
-    ImGui::SliderFloat("speed", &m_speed, 0.1f, 10.0f);
+    ImGui::SliderFloat("Speed", &m_speed, 0.1f, 10.0f);
 }
 
 CameraFps::CameraFps(const glm::vec3 &position, float speed): Camera{position, speed} {
 }
 
 void CameraFps::move(const Direction &direction, const float deltaTime) {
+    glm::vec3 delta;
     switch (direction) {
-        case Direction::Up:
-        case Direction::Down:
+        case Direction::Up: case Direction::Down:
             return;
-        default:
-            Camera::move(direction, deltaTime);
+        case Direction::Forward:
+            delta = m_front;
+            break;
+        case Direction::Backward:
+            delta = -m_front;
+            break;
+        case Direction::Left:
+            delta = -glm::normalize(glm::cross(m_front, m_up));
+            break;
+        case Direction::Right:
+            delta = glm::normalize(glm::cross(m_front, m_up));
+            break;
     }
+    delta.y = 0.0;
+    m_position += glm::normalize(delta) * m_speed * deltaTime;
+    update();
 }
 
 CameraLock::CameraLock(const glm::vec3 &position,
@@ -136,10 +148,10 @@ void CameraLock::setTarget(const glm::vec3 &target) {
     update();
 }
 
-void CameraLock::renderWidgets() {
+void CameraLock::widgets() {
     baseWidgets();
     auto target = m_target;
-    ImGui::InputFloat3("target", glm::value_ptr(target));
+    ImGui::SliderFloat3("Target", glm::value_ptr(target), -10.0f, 10.0f);
     setTarget(target);
 }
 
@@ -168,7 +180,7 @@ void CameraManager::setActiveCamera(const Type camera) {
     }
 }
 
-void CameraManager::renderWidgets() {
+void CameraManager::widgets() {
     constexpr std::array cameraTypes = {"Free", "FPS", "Locked"};
     int cameraIndex = getCameraIndex(m_activeCameraType);
     ImGui::Combo("Camera", &cameraIndex, cameraTypes.data(),
