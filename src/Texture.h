@@ -7,15 +7,6 @@
 
 class Texture {
 public:
-    enum class Type {
-        Texture2D = GL_TEXTURE_2D,
-    };
-
-    enum class Format {
-        RGB = GL_RGB,
-        RGBA = GL_RGBA,
-    };
-
     enum class Wrap {
         Repeat = GL_REPEAT,
         MirroredRepeat = GL_MIRRORED_REPEAT,
@@ -32,10 +23,11 @@ public:
         LinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR,
     };
 
-    Texture(const std::string &texturePath, Type type,
-            Format format);
+    explicit Texture(const std::string &texturePath);
 
     void bind() const;
+
+    static void unbind();
 
     void setUnit(int unit) const;
 
@@ -48,8 +40,6 @@ public:
 
 private:
     GLuint m_textureId;
-    Type m_type;
-    Format m_format;
 };
 
 #endif

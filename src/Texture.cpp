@@ -1,16 +1,25 @@
-#include "Texture.h"
+#include <stb_image.h>
 
-#include "stb_image.h"
+#include "Texture.h"
 
 #include <iostream>
 
-Texture::Texture(const std::string &texturePath, const Type type, const Format format): m_textureId{0}, m_type{type},
-    m_format{format} {
+Texture::Texture(const std::string &texturePath): m_textureId{0} {
     glGenTextures(1, &m_textureId);
     bind();
     int width, height, nrChannels;
     if (unsigned char *data = stbi_load(texturePath.c_str(), &width, &height, &nrChannels, 0)) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, static_cast<GLenum>(m_format), GL_UNSIGNED_BYTE,
+        GLenum format;
+        switch (nrChannels) {
+            case 1: format = GL_RED;
+                break;
+            case 3: format = GL_RGB;
+                break;
+            case 4: format = GL_RGBA;
+                break;
+            default: std::unreachable();
+        }
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE,
                      data);
         glGenerateMipmap(GL_TEXTURE_2D);
         stbi_image_free(data);
@@ -20,7 +29,11 @@ Texture::Texture(const std::string &texturePath, const Type type, const Format f
 }
 
 void Texture::bind() const {
-    glBindTexture(static_cast<GLenum>(m_type), m_textureId);
+    glBindTexture(GL_TEXTURE_2D, m_textureId);
+}
+
+void Texture::unbind() {
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Texture::setUnit(const int unit) const {
@@ -29,16 +42,22 @@ void Texture::setUnit(const int unit) const {
 }
 
 void Texture::setFilter(const Filter minFilter, const Filter magFilter) const {
-    glTexParameteri(static_cast<GLenum>(m_type), GL_TEXTURE_MIN_FILTER, static_cast<GLint>(minFilter));
-    glTexParameteri(static_cast<GLenum>(m_type), GL_TEXTURE_MAG_FILTER, static_cast<GLint>(magFilter));
+    bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(minFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(magFilter));
+    unbind();
 }
 
 void Texture::setWrap(const Wrap wrapS, const Wrap wrapT, const Wrap wrapR) const {
-    glTexParameteri(static_cast<GLenum>(m_type), GL_TEXTURE_WRAP_S, static_cast<GLint>(wrapS));
-    glTexParameteri(static_cast<GLenum>(m_type), GL_TEXTURE_WRAP_T, static_cast<GLint>(wrapT));
-    glTexParameteri(static_cast<GLenum>(m_type), GL_TEXTURE_WRAP_R, static_cast<GLint>(wrapR));
+    bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrapS));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrapT));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, static_cast<GLint>(wrapR));
+    unbind();
 }
 
 void Texture::setBorderColor(const GLfloat *params) const {
-    glTexParameterfv(static_cast<GLenum>(m_type), GL_TEXTURE_BORDER_COLOR, params);
+    bind();
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, params);
+    unbind();
 }
