@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -57,16 +58,19 @@ void processInput(GLFWwindow *window);
 
 struct Material {
     Texture diffuse;
-    glm::vec3 specular;
-    int shininessPower;
-    float shininess;
+    Texture specular;
+    int shininess;
 
     void widgets() {
-        ImGui::ColorEdit3("Object specular", glm::value_ptr(specular));
-        ImGui::SliderInt("Shininess", &shininessPower, 1, 8);
+        ImGui::SliderInt("Shininess", &shininess, 1, 8);
         ImGui::SameLine();
-        shininess = static_cast<float>(std::pow(2, shininessPower));
-        ImGui::Text(std::to_string(static_cast<int>(shininess)).c_str());
+        const auto value = static_cast<float>(std::pow(2, shininess));
+        const auto text = fmt::format("({})", value);
+        ImGui::Text(text.c_str());
+    }
+
+    [[nodiscard]] float getShininess() const {
+        return static_cast<float>(std::pow(2, shininess));
     }
 };
 
@@ -205,25 +209,31 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     const auto cubeShader = Shader(SHADER_DIR + "cube.vert", SHADER_DIR + "cube.frag");
+    cubeShader.use();
+    cubeShader.setInt("material.diffuse", 0);
+    cubeShader.setInt("material.specular", 1);
+    cubeShader.setInt("material.emission", 2);
     const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
 
-    bool isPaused = false;
+    bool isPaused = true;
     auto backgroundColor = glm::vec3(0.0f);
     auto wireframe = false;
 
-    auto containerTex = Texture{TEXTURE_DIR + "container.png"};
-    containerTex.setFilter(Texture::Filter::Linear, Texture::Filter::Linear);
-    containerTex.setWrap(Texture::Wrap::Repeat, Texture::Wrap::Repeat);
-    containerTex.setUnit(0);
+    auto containerDiffuseMap = Texture{TEXTURE_DIR + "container.png"};
+    auto containerSpecularMap = Texture{TEXTURE_DIR + "container_specular.png"};
+    auto containerEmissionMap = Texture(TEXTURE_DIR + "matrix.jpg");
+    containerDiffuseMap.setUnit(0);
+    containerSpecularMap.setUnit(1);
+    containerEmissionMap.setUnit(2);
     auto cubeGlobalScale = 1.0f;
     auto cubeRotationAngle = 0.0f; // in degrees
     auto cubeTranslation = glm::vec3(0.0f);
-    auto objectMaterial = Material{containerTex, glm::vec3(0.5f), 7, 128};
+    auto objectMaterial = Material{containerDiffuseMap, containerSpecularMap, 7};
 
     auto light = Light{
         glm::vec3(0.0f, 0.0, -2.0f),
-        glm::vec3(0.2f),
-        glm::vec3(0.5f),
+        glm::vec3(0.1f),
+        glm::vec3(1.0f),
         glm::vec3(1.0f),
     };
 
@@ -313,9 +323,7 @@ int main() {
 
         // Render the cubes.
         cubeShader.use();
-        cubeShader.setInt("material.diffuse", 0);
-        cubeShader.setVec3("material.specular", objectMaterial.specular);
-        cubeShader.setFloat("material.shininess", objectMaterial.shininess);
+        cubeShader.setFloat("material.shininess", objectMaterial.getShininess());
         cubeShader.setVec3("light.ambient", light.ambient);
         cubeShader.setVec3("light.diffuse", light.diffuse);
         cubeShader.setVec3("light.specular", light.specular);

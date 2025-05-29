@@ -6,14 +6,17 @@
 #include <memory>
 #include <unordered_map>
 
+constexpr auto INITIAL_POS = glm::vec3(0.0f);
+constexpr auto INITIAL_SPEED = 7.0f;
+
 class Camera {
 public:
     enum class Direction {
         Forward, Backward, Left, Right, Up, Down
     };
 
-    explicit Camera(const glm::vec3 &position = glm::vec3(0.0f, 0.0f, 0.0f),
-                    float speed = 2.0f);
+    explicit Camera(const glm::vec3 &position = INITIAL_POS,
+                    float speed = INITIAL_SPEED);
 
     virtual ~Camera() = default;
 
@@ -55,17 +58,17 @@ protected:
 
 class CameraFps final : public Camera {
 public:
-    explicit CameraFps(const glm::vec3 &position = glm::vec3(0.0f, 0.0f, 0.0f),
-                       float speed = 2.0f);
+    explicit CameraFps(const glm::vec3 &position = INITIAL_POS,
+                       float speed = INITIAL_SPEED);
 
     void move(const Direction &direction, float deltaTime) override;
 };
 
 class CameraLock final : public Camera {
 public:
-    explicit CameraLock(const glm::vec3 &position = glm::vec3(0.0f, 0.0f, 0.0f),
-                        const glm::vec3 &target = glm::vec3(0.0f, 0.0f, 0.0f),
-                        float speed = 2.0f);
+    explicit CameraLock(const glm::vec3 &position = INITIAL_POS,
+                        const glm::vec3 &target = INITIAL_POS + glm::vec3(0.0f, 0.0f, -2.0f),
+                        float speed = INITIAL_SPEED);
 
     void move(const Direction &direction, float deltaTime) override;
 

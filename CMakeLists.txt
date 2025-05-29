@@ -9,26 +9,36 @@ set(CMAKE_WARN_DEPRECATED OFF)
 
 include(FetchContent)
 
-FetchContent_Declare(glfw
+FetchContent_Declare(
+        glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
         GIT_TAG 3.4
 )
 
-FetchContent_Declare(glm
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
+FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm
         GIT_TAG bf71a834948186f4097caa076cd2663c69a10e1e
 )
 
-FetchContent_Declare(dbg_macro
+FetchContent_Declare(
+        dbg_macro
         GIT_REPOSITORY https://github.com/sharkdp/dbg-macro
 )
 
-FetchContent_Declare(imgui
-        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui
         GIT_TAG v1.90.1
 )
 
-FetchContent_MakeAvailable(glfw glm dbg_macro imgui)
+FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt
+        GIT_TAG 11.2.0
+)
+
+FetchContent_MakeAvailable(glfw glm dbg_macro imgui fmt)
 
 set(IMGUI_DIR ${imgui_SOURCE_DIR})
 add_library(imgui STATIC
@@ -62,4 +72,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         dbg_macro
         imgui
         stb
+        fmt
 )

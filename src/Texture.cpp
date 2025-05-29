@@ -26,14 +26,12 @@ Texture::Texture(const std::string &texturePath): m_textureId{0} {
     } else {
         std::cerr << "Failed to load texture '" << texturePath << "'\n";
     }
+    setFilter(Filter::LinearMipmapLinear, Filter::Linear);
+    setWrap(Wrap::Repeat, Wrap::Repeat);
 }
 
 void Texture::bind() const {
     glBindTexture(GL_TEXTURE_2D, m_textureId);
-}
-
-void Texture::unbind() {
-    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Texture::setUnit(const int unit) const {
@@ -45,7 +43,6 @@ void Texture::setFilter(const Filter minFilter, const Filter magFilter) const {
     bind();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(minFilter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(magFilter));
-    unbind();
 }
 
 void Texture::setWrap(const Wrap wrapS, const Wrap wrapT, const Wrap wrapR) const {
@@ -53,11 +50,9 @@ void Texture::setWrap(const Wrap wrapS, const Wrap wrapT, const Wrap wrapR) cons
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrapS));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrapT));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, static_cast<GLint>(wrapR));
-    unbind();
 }
 
 void Texture::setBorderColor(const GLfloat *params) const {
     bind();
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, params);
-    unbind();
 }

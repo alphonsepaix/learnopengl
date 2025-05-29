@@ -27,8 +27,6 @@ public:
 
     void bind() const;
 
-    static void unbind();
-
     void setUnit(int unit) const;
 
     void setFilter(Filter minFilter, Filter magFilter) const;
