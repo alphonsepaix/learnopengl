@@ -21,7 +21,9 @@ auto WINDOW_HEIGHT = 900;
 constexpr auto WINDOW_TITLE = "Learn OpenGL";
 
 float deltaTime = 0.0f;
+float deltaTimeAdded = 0.0f;
 float lastFrame = 0.0f;
+std::string performanceStr = "Starting...";
 
 bool firstMouse = true;
 auto lastX = WINDOW_WIDTH / 2.0;
@@ -54,6 +56,7 @@ struct Material {
     glm::vec3 specular;
     int shininessPower;
     float shininess;
+
     void widgets() {
         ImGui::ColorEdit3("Object ambient", glm::value_ptr(ambient));
         ImGui::ColorEdit3("Object diffuse", glm::value_ptr(diffuse));
@@ -70,6 +73,7 @@ struct Light {
     glm::vec3 ambient;
     glm::vec3 diffuse;
     glm::vec3 specular;
+
     void widgets() {
         ImGui::SliderFloat3("Position", glm::value_ptr(position), -10.0f, 10.0f);
         ImGui::ColorEdit3("Light ambient", glm::value_ptr(ambient));
@@ -206,14 +210,14 @@ int main() {
     auto cubeGlobalScale = 1.0f;
     auto cubeRotationAngle = 0.0f; // in degrees
     auto cubeTranslation = glm::vec3(0.0f);
-    auto objectMaterial = Material {
+    auto objectMaterial = Material{
         glm::vec3(0.0f, 1.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f),
         glm::vec3(0.5f),
         7, 128
     };
 
-    auto light = Light {
+    auto light = Light{
         glm::vec3(0.0f, 0.0, -2.0f),
         glm::vec3(0.2f),
         glm::vec3(0.5f),
@@ -237,6 +241,7 @@ int main() {
         const auto currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        deltaTimeAdded += deltaTime;
 
         processInput(window);
 
@@ -248,10 +253,13 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui::NewFrame();
 
-        std::stringstream ss;
-        auto fps = static_cast<int>(1 / deltaTime);
-        ss << "Application average: " << deltaTime * 1000 << "ms/frame (" << fps << " FPS)\n";
-        auto performanceStr = ss.str();
+        if (deltaTimeAdded > 1.0f) {
+            std::stringstream ss;
+            deltaTimeAdded -= 1.0f;
+            auto fps = static_cast<int>(1 / deltaTime);
+            ss << "Application average: " << deltaTime * 1000 << "ms/frame (" << fps << " FPS)\n";
+            performanceStr = ss.str();
+        }
         ImGui::Text(performanceStr.c_str());
 
         ImGui::SeparatorText("Window");
