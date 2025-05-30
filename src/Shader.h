@@ -2,7 +2,8 @@
 #define SHADER_H
 
 #include <glad/glad.h>
-#include <glm/glm.hpp>
+
+class Light;
 
 #include <string>
 
@@ -29,6 +30,8 @@ public:
     void setMat3(const std::string &name, const glm::mat3 &value) const;
 
     void setMat4(const std::string &name, const glm::mat4 &value) const;
+
+    void setLight(const Light *light) const;
 
 private:
     GLuint m_programId;

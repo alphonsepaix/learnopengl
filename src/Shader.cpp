@@ -1,6 +1,7 @@
-#include "Shader.h"
-
 #include <glm/gtc/type_ptr.hpp>
+
+#include "Light.h"
+#include "Shader.h"
 
 #include <fstream>
 #include <iostream>
@@ -69,6 +70,10 @@ void Shader::setMat3(const std::string &name, const glm::mat3 &value) const {
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
     glUniformMatrix4fv(glGetUniformLocation(m_programId, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::setLight(const Light *const light) const {
+    light->setShaderUniforms(this);
 }
 
 GLuint Shader::compile(const std::string &source, const GLuint type) {

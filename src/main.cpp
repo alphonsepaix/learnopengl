@@ -13,67 +13,14 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Light.h"
+#include "Material.h"
+#include "Texture.h"
+#include "events.h"
+#include "globals.h"
 
 #include <array>
 #include <iostream>
 #include <tuple>
-
-#include "Texture.h"
-
-auto WINDOW_WIDTH = 1600;
-auto WINDOW_HEIGHT = 900;
-constexpr auto WINDOW_TITLE = "Learn OpenGL";
-
-const std::string SHADER_DIR = "assets/shaders/";
-const std::string TEXTURE_DIR = "assets/textures/";
-
-float deltaTime = 0.0f;
-float deltaTimeAdded = 0.0f;
-float lastFrame = 0.0f;
-std::string performanceStr = "Starting...";
-
-bool firstMouse = true;
-auto lastX = WINDOW_WIDTH / 2.0;
-auto lastY = WINDOW_HEIGHT / 2.0;
-
-bool cursorLocked = true;
-bool cursorJustUnlocked = false;
-
-float fov = 45.0f;
-
-constexpr auto UNLOCK_KEY = GLFW_KEY_LEFT_SHIFT;
-constexpr auto FORWARD_KEY = GLFW_KEY_W;
-constexpr auto BACKWARD_KEY = GLFW_KEY_S;
-constexpr auto LEFT_KEY = GLFW_KEY_A;
-constexpr auto RIGHT_KEY = GLFW_KEY_D;
-constexpr auto UP_KEY = GLFW_KEY_SPACE;
-constexpr auto DOWN_KEY = GLFW_KEY_LEFT_CONTROL;
-
-void framebufferSizeCallback(GLFWwindow *window, int width, int height);
-
-void mouseCallback(GLFWwindow *window, double posX, double posY);
-
-void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
-
-void processInput(GLFWwindow *window);
-
-struct Material {
-    Texture diffuse;
-    Texture specular;
-    int shininess;
-
-    void widgets() {
-        ImGui::SliderInt("Shininess", &shininess, 1, 8);
-        ImGui::SameLine();
-        const auto value = static_cast<float>(std::pow(2, shininess));
-        const auto text = fmt::format("({})", value);
-        ImGui::Text(text.c_str());
-    }
-
-    [[nodiscard]] float getShininess() const {
-        return static_cast<float>(std::pow(2, shininess));
-    }
-};
 
 int main() {
     // auto alone will strip the reference, giving errors (we deleted the copy and assignment constructors).
@@ -195,7 +142,7 @@ int main() {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    const auto cubeShader = Shader(SHADER_DIR + "cube.vert", SHADER_DIR + "spotlight.frag");
+    const auto cubeShader = Shader(SHADER_DIR + "cube.vert", SHADER_DIR + "cube.frag");
     cubeShader.use();
     cubeShader.setInt("material.diffuse", 0);
     cubeShader.setInt("material.specular", 1);
@@ -203,6 +150,7 @@ int main() {
     // const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
 
     bool isPaused = true;
+    bool emissionOn = false;
     auto backgroundColor = glm::vec3(0.0f);
     auto wireframe = false;
 
@@ -224,16 +172,13 @@ int main() {
     //     glm::vec3(1.0f),
     // };
 
-    auto light = SpotLight{
-        glm::vec3(0.0f, 0.0f, 0.0f), // camera position
-        glm::vec3(0.0f, 0.0f, -1.0f), // camera front
-        glm::vec3(0.1f),
-        glm::vec3(1.0f),
-        glm::vec3(1.0f),
-        glm::cos(glm::radians(12.0f)),
-        glm::cos(glm::radians(22.0f)),
-        1.0f, 0.07f, 0.017f
-    };
+    std::vector<std::unique_ptr<Light> > lights;
+    lights.push_back(std::make_unique<DirectionalLight>(glm::vec3(-1.0f)));
+    lights.push_back(std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));
+    lights.push_back(std::make_unique<SpotLight>(
+        instance.getActiveCamera()->getPosition(),
+        instance.getActiveCamera()->getFront()
+    ));
 
     auto cubes = std::to_array<std::tuple<glm::vec3, float> >({
         {glm::vec3(0.0f, 0.0f, 0.0f), 1.2f},
@@ -285,11 +230,13 @@ int main() {
         ImGui::SliderFloat3("Offset", glm::value_ptr(cubeTranslation), -10.0f, 10.0f);
         ImGui::SliderFloat("Scale", &cubeGlobalScale, 0.0f, 10.0f);
         ImGui::Checkbox("Pause rotation", &isPaused);
+        ImGui::Checkbox("Emission map", &emissionOn);
         objectMaterial.widgets();
 
         // Light
-        ImGui::SeparatorText("Light");
-        // light.widgets();
+        ImGui::SeparatorText("Lights");
+        for (auto &light: lights)
+            light.get()->widgets();
 
         ImGui::SeparatorText("Camera");
         instance.widgets(); // switch camera
@@ -310,7 +257,7 @@ int main() {
         // lightModel = glm::translate(lightModel, light.position);
         // lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 
-        // Render the light source.
+        // Render the light sources.
         // lightShader.use();
         // lightShader.setMat4("model", lightModel);
         // lightShader.setMat4("view", view);
@@ -319,23 +266,13 @@ int main() {
         // glBindVertexArray(lightVao);
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        auto viewPos = instance.getActiveCamera()->getPosition();
-
         // Render the cubes.
         cubeShader.use();
         cubeShader.setFloat("material.shininess", objectMaterial.getShininess());
-        // cubeShader.setVec3("light.position", light.position);
-        cubeShader.setVec3("light.position", viewPos);
-        cubeShader.setVec3("light.direction", instance.getActiveCamera()->getFront());
-        cubeShader.setVec3("light.ambient", light.ambient);
-        cubeShader.setVec3("light.diffuse", light.diffuse);
-        cubeShader.setVec3("light.specular", light.specular);
-        cubeShader.setFloat("light.cutOff", light.cutOff);
-        cubeShader.setFloat("light.outerCutOff", light.outerCutOff);
-        cubeShader.setFloat("light.constant", light.constant);
-        cubeShader.setFloat("light.linear", light.linear);
-        cubeShader.setFloat("light.quadratic", light.quadratic);
-        // cubeShader.setVec3("light.direction", light.direction);
+        cubeShader.setBool("emissionOn", emissionOn);
+        for (const auto &light: lights)
+            cubeShader.setLight(light.get());
+        auto viewPos = instance.getActiveCamera()->getPosition();
         cubeShader.setVec3("viewPos", viewPos);
         for (std::size_t i = 0; const auto &[cubeCenter, cubeScale]: cubes) {
             auto model = glm::mat4(1.0f);
@@ -381,67 +318,4 @@ int main() {
     ImGui_ImplOpenGL3_Shutdown();
     glfwTerminate();
     return 0;
-}
-
-void framebufferSizeCallback(GLFWwindow *, const int width, const int height) {
-    glViewport(0, 0, width, height);
-    WINDOW_WIDTH = width;
-    WINDOW_HEIGHT = height;
-}
-
-void mouseCallback(GLFWwindow *window, double posX, double posY) {
-    if (!cursorLocked)
-        return;
-    if (firstMouse || cursorJustUnlocked) {
-        lastX = posX;
-        lastY = posY;
-        firstMouse = false;
-        cursorJustUnlocked = false;
-    }
-    const auto xOffset = posX - lastX;
-    const auto yOffset = posY - lastY;
-    lastX = posX;
-    lastY = posY;
-    CameraManager::getInstance().getActiveCamera()->mouseUpdate(
-        static_cast<float>(xOffset),
-        static_cast<float>(yOffset));
-}
-
-void scrollCallback(GLFWwindow *window, double, double yOffset) {
-    fov -= static_cast<float>(yOffset);
-    if (fov < 1.0f)
-        fov = 1.0f;
-    if (fov > 45.0f)
-        fov = 45.0f;
-}
-
-void processInput(GLFWwindow *window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
-
-    // Unlock the window if LEFT_CTRL is pressed.
-    if (glfwGetKey(window, UNLOCK_KEY) == GLFW_PRESS && cursorLocked) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        cursorLocked = false;
-    }
-    if (glfwGetKey(window, UNLOCK_KEY) == GLFW_RELEASE && !cursorLocked) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        cursorLocked = cursorJustUnlocked = true;
-    }
-
-    // Camera movement.
-    const auto camera = CameraManager::getInstance().getActiveCamera();
-    if (glfwGetKey(window, FORWARD_KEY) == GLFW_PRESS)
-        camera->move(Camera::Direction::Forward, deltaTime);
-    if (glfwGetKey(window, BACKWARD_KEY) == GLFW_PRESS)
-        camera->move(Camera::Direction::Backward, deltaTime);
-    if (glfwGetKey(window, LEFT_KEY) == GLFW_PRESS)
-        camera->move(Camera::Direction::Left, deltaTime);
-    if (glfwGetKey(window, RIGHT_KEY) == GLFW_PRESS)
-        camera->move(Camera::Direction::Right, deltaTime);
-    if (glfwGetKey(window, UP_KEY) == GLFW_PRESS)
-        camera->move(Camera::Direction::Up, deltaTime);
-    if (glfwGetKey(window, DOWN_KEY) == GLFW_PRESS)
-        camera->move(Camera::Direction::Down, deltaTime);
 }

@@ -38,7 +38,13 @@ FetchContent_Declare(
         GIT_TAG 11.2.0
 )
 
-FetchContent_MakeAvailable(glfw glm dbg_macro imgui fmt)
+FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY https://github.com/assimp/assimp
+        GIT_TAG v5.4.3
+)
+
+FetchContent_MakeAvailable(glfw glm dbg_macro imgui fmt assimp)
 
 set(IMGUI_DIR ${imgui_SOURCE_DIR})
 add_library(imgui STATIC
@@ -73,4 +79,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         imgui
         stb
         fmt
+        assimp
 )
