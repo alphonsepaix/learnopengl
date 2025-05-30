@@ -12,6 +12,7 @@
 
 #include "Shader.h"
 #include "Camera.h"
+#include "Light.h"
 
 #include <array>
 #include <iostream>
@@ -71,20 +72,6 @@ struct Material {
 
     [[nodiscard]] float getShininess() const {
         return static_cast<float>(std::pow(2, shininess));
-    }
-};
-
-struct Light {
-    glm::vec3 position;
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
-
-    void widgets() {
-        ImGui::SliderFloat3("Position", glm::value_ptr(position), -10.0f, 10.0f);
-        ImGui::ColorEdit3("Light ambient", glm::value_ptr(ambient));
-        ImGui::ColorEdit3("Light diffuse", glm::value_ptr(diffuse));
-        ImGui::ColorEdit3("Light specular", glm::value_ptr(specular));
     }
 };
 
@@ -208,12 +195,12 @@ int main() {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    const auto cubeShader = Shader(SHADER_DIR + "cube.vert", SHADER_DIR + "cube.frag");
+    const auto cubeShader = Shader(SHADER_DIR + "cube.vert", SHADER_DIR + "spotlight.frag");
     cubeShader.use();
     cubeShader.setInt("material.diffuse", 0);
     cubeShader.setInt("material.specular", 1);
     cubeShader.setInt("material.emission", 2);
-    const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
+    // const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
 
     bool isPaused = true;
     auto backgroundColor = glm::vec3(0.0f);
@@ -230,11 +217,22 @@ int main() {
     auto cubeTranslation = glm::vec3(0.0f);
     auto objectMaterial = Material{containerDiffuseMap, containerSpecularMap, 7};
 
-    auto light = Light{
-        glm::vec3(0.0f, 0.0, -2.0f),
+    // auto light = DirectionalLight{
+    //     glm::vec3(-0.2f, -1.0f, -0.3f),
+    //     glm::vec3(0.1f),
+    //     glm::vec3(1.0f),
+    //     glm::vec3(1.0f),
+    // };
+
+    auto light = SpotLight{
+        glm::vec3(0.0f, 0.0f, 0.0f), // camera position
+        glm::vec3(0.0f, 0.0f, -1.0f), // camera front
         glm::vec3(0.1f),
         glm::vec3(1.0f),
         glm::vec3(1.0f),
+        glm::cos(glm::radians(12.0f)),
+        glm::cos(glm::radians(22.0f)),
+        1.0f, 0.07f, 0.017f
     };
 
     auto cubes = std::to_array<std::tuple<glm::vec3, float> >({
@@ -291,7 +289,7 @@ int main() {
 
         // Light
         ImGui::SeparatorText("Light");
-        light.widgets();
+        // light.widgets();
 
         ImGui::SeparatorText("Camera");
         instance.widgets(); // switch camera
@@ -308,27 +306,37 @@ int main() {
                                            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f,
                                            100.0f);
 
-        auto lightModel = glm::mat4(1.0f);
-        lightModel = glm::translate(lightModel, light.position);
-        lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+        // auto lightModel = glm::mat4(1.0f);
+        // lightModel = glm::translate(lightModel, light.position);
+        // lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 
         // Render the light source.
-        lightShader.use();
-        lightShader.setMat4("model", lightModel);
-        lightShader.setMat4("view", view);
-        lightShader.setMat4("projection", projection);
-        lightShader.setVec3("lightColor", light.diffuse);
-        glBindVertexArray(lightVao);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // lightShader.use();
+        // lightShader.setMat4("model", lightModel);
+        // lightShader.setMat4("view", view);
+        // lightShader.setMat4("projection", projection);
+        // lightShader.setVec3("lightColor", light.diffuse);
+        // glBindVertexArray(lightVao);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        auto viewPos = instance.getActiveCamera()->getPosition();
 
         // Render the cubes.
         cubeShader.use();
         cubeShader.setFloat("material.shininess", objectMaterial.getShininess());
+        // cubeShader.setVec3("light.position", light.position);
+        cubeShader.setVec3("light.position", viewPos);
+        cubeShader.setVec3("light.direction", instance.getActiveCamera()->getFront());
         cubeShader.setVec3("light.ambient", light.ambient);
         cubeShader.setVec3("light.diffuse", light.diffuse);
         cubeShader.setVec3("light.specular", light.specular);
-        cubeShader.setVec3("light.position", light.position);
-        cubeShader.setVec3("viewPos", instance.getActiveCamera()->getPosition());
+        cubeShader.setFloat("light.cutOff", light.cutOff);
+        cubeShader.setFloat("light.outerCutOff", light.outerCutOff);
+        cubeShader.setFloat("light.constant", light.constant);
+        cubeShader.setFloat("light.linear", light.linear);
+        cubeShader.setFloat("light.quadratic", light.quadratic);
+        // cubeShader.setVec3("light.direction", light.direction);
+        cubeShader.setVec3("viewPos", viewPos);
         for (std::size_t i = 0; const auto &[cubeCenter, cubeScale]: cubes) {
             auto model = glm::mat4(1.0f);
             model = glm::translate(model, cubeCenter);

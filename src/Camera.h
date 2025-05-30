@@ -28,6 +28,10 @@ public:
         return m_position;
     }
 
+    [[nodiscard]] const glm::vec3 &getFront() const {
+        return m_front;
+    }
+
     virtual void widgets();
 
     virtual void move(const Direction &direction, float deltaTime);
