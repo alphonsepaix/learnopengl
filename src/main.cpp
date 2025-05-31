@@ -112,9 +112,9 @@ int main() {
     };
     // clang-format on
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    GLuint cubeVao;
+    glGenVertexArrays(1, &cubeVao);
+    glBindVertexArray(cubeVao);
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -147,7 +147,7 @@ int main() {
     cubeShader.setInt("material.diffuse", 0);
     cubeShader.setInt("material.specular", 1);
     cubeShader.setInt("material.emission", 2);
-    // const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
+    const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
 
     bool isPaused = true;
     bool emissionOn = false;
@@ -249,13 +249,11 @@ int main() {
         // lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 
         // Render the light sources.
-        // lightShader.use();
-        // lightShader.setMat4("model", lightModel);
-        // lightShader.setMat4("view", view);
-        // lightShader.setMat4("projection", projection);
-        // lightShader.setVec3("lightColor", light.diffuse);
-        // glBindVertexArray(lightVao);
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        lightShader.use();
+        lightShader.setMat4("view", view);
+        lightShader.setMat4("projection", projection);
+        glBindVertexArray(lightVao);
+        lightManager.draw(&lightShader);
 
         // Render the cubes.
         cubeShader.use();
@@ -294,7 +292,7 @@ int main() {
             cubeShader.setMat4("model", model);
             cubeShader.setMat4("view", view);
             cubeShader.setMat4("projection", projection);
-            glBindVertexArray(vao);
+            glBindVertexArray(cubeVao);
             glDrawArrays(GL_TRIANGLES, 0, 36);
             ++i;
         }

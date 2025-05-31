@@ -14,6 +14,24 @@ struct Material {
     float shininess;
 };
 
+struct Light {
+    int type;
+
+    vec3 direction;
+    vec3 position;
+
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+
+    float cutOff;
+    float outerCutOff;
+
+    float constant;
+    float linear;
+    float quadratic;
+};
+
 struct DirLight {
     vec3 direction;
 
@@ -51,25 +69,35 @@ struct SpotLight {
 };
 
 uniform Material material;
-uniform DirLight dirLight;
-uniform PointLight pointLight;
-uniform SpotLight spotLight;
+uniform Light lights[30];
 uniform vec3 viewPos;
 uniform bool emissionOn;
+uniform int lightCount;
 
-vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir);
-vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir);
-vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 viewDir);
+vec3 calcDirLight(Light light, vec3 normal, vec3 viewDir);
+vec3 calcPointLight(Light light, vec3 normal, vec3 viewDir);
+vec3 calcSpotLight(Light light, vec3 normal, vec3 viewDir);
 
 void main() {
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 result = vec3(0.0f);
+    for (int i = 0; i < lightCount; i++)
+    {
+        if (lights[i].type == 0) {
+            result += calcDirLight(lights[i], norm, viewDir);
+        }
+        else if (lights[i].type == 1) {
+            result += calcPointLight(lights[i], norm, viewDir);
+        }
+        else if (lights[i].type == 2) {
+            result += calcSpotLight(lights[i], norm, viewDir);
+        } else {
+            // Unsupported light type, skip
+            continue;
+        }
+    }
 
-    vec3 result = calcDirLight(dirLight, norm, viewDir);
-    result += calcPointLight(pointLight, norm, viewDir);
-    result += calcSpotLight(spotLight, norm, viewDir);
-
-    //     emission
     if (emissionOn)
     {
         float borderWidth = 0.1f;
@@ -83,7 +111,7 @@ void main() {
     FragColor = vec4(result, 1.0f);
 }
 
-vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir)
+vec3 calcDirLight(Light light, vec3 normal, vec3 viewDir)
 {
     // ambient
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
@@ -102,7 +130,7 @@ vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     return result;
 }
 
-vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir)
+vec3 calcPointLight(Light light, vec3 normal, vec3 viewDir)
 {
     // ambient
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
@@ -124,7 +152,7 @@ vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir)
     return result * attenuation;
 }
 
-vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 viewDir)
+vec3 calcSpotLight(Light light, vec3 normal, vec3 viewDir)
 {
     // ambient
     vec3 result = light.ambient * vec3(texture(material.diffuse, TexCoords));

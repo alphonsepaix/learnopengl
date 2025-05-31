@@ -8,8 +8,8 @@
 #include <array>
 #include <iostream>
 
-Light::Light(const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular)
-    : m_ambient{ambient}, m_diffuse{diffuse}, m_specular{specular} {
+Light::Light(const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular, const Type type)
+    : m_ambient{ambient}, m_diffuse{diffuse}, m_specular{specular}, m_type{type} {
 }
 
 std::string Light::getTypeStr(const Type type) {
@@ -34,14 +34,20 @@ void Light::widgets() {
                       glm::value_ptr(m_specular));
 }
 
-void Light::setColorUniforms(const Shader *const shader, const std::string &name) const {
+Light::Type Light::getType() const {
+    return m_type;
+}
+
+void Light::setBaseUniforms(const Shader *const shader, const std::string &name) const {
     shader->setVec3(name + ".ambient", m_ambient);
     shader->setVec3(name + ".diffuse", m_diffuse);
     shader->setVec3(name + ".specular", m_specular);
+    shader->setInt(name + ".type", static_cast<int>(m_type));
 }
 
 DirectionalLight::DirectionalLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse,
-                                   glm::vec3 specular): Light(ambient, diffuse, specular), m_direction{direction} {
+                                   glm::vec3 specular): Light(ambient, diffuse, specular, Type::Directional),
+                                                        m_direction{direction} {
 }
 
 void DirectionalLight::widgets() {
@@ -49,19 +55,19 @@ void DirectionalLight::widgets() {
     ImGui::SliderFloat3("Direction", glm::value_ptr(m_direction), -1.0f, 1.0f);
 }
 
-void DirectionalLight::setShaderUniforms(const Shader *const shader) const {
-    const std::string name = "dirLight";
-    setColorUniforms(shader, name);
+void DirectionalLight::setShaderUniforms(const Shader *const shader, const std::string &name) const {
+    setBaseUniforms(shader, name);
 
     shader->setVec3(name + ".direction", m_direction);
 }
 
-Light::Type DirectionalLight::getType() const {
-    return Type::Directional;
+void DirectionalLight::draw(const Shader *shader) {
+    // no-op
 }
 
 PointLight::PointLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float constant,
-                       float linear, float quadratic) : Light(ambient, diffuse, specular), m_position{position},
+                       float linear, float quadratic) : Light(ambient, diffuse, specular, Type::Point),
+                                                        m_position{position},
                                                         m_constant{constant}, m_linear{linear}, m_quadratic{quadratic} {
 }
 
@@ -71,9 +77,8 @@ void PointLight::widgets() {
     attenuationWidgets(m_constant, m_linear, m_quadratic);
 }
 
-void PointLight::setShaderUniforms(const Shader *const shader) const {
-    const std::string name = "pointLight";
-    setColorUniforms(shader, name);
+void PointLight::setShaderUniforms(const Shader *const shader, const std::string &name) const {
+    setBaseUniforms(shader, name);
     shader->setVec3(name + ".position", m_position);
 
     shader->setFloat(name + ".constant", m_constant);
@@ -81,13 +86,17 @@ void PointLight::setShaderUniforms(const Shader *const shader) const {
     shader->setFloat(name + ".quadratic", m_quadratic);
 }
 
-Light::Type PointLight::getType() const {
-    return Type::Point;
+void PointLight::draw(const Shader *shader) {
+    auto model = glm::translate(glm::mat4(1.0f), m_position);
+    model = glm::scale(model, glm::vec3(0.2f));
+    shader->setMat4("model", model);
+    shader->setVec3("lightColor", m_diffuse);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 SpotLight::SpotLight(glm::vec3 position, glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
                      float cutOff, float outerCutOff, float constant, float linear,
-                     float quadratic) : Light(ambient, diffuse, specular),
+                     float quadratic) : Light(ambient, diffuse, specular, Type::Spot),
                                         m_position{position}, m_direction{direction},
                                         m_cutOff{cutOff}, m_outerCutOff{outerCutOff}, m_constant{constant},
                                         m_linear{linear}, m_quadratic{quadratic} {
@@ -100,9 +109,8 @@ void SpotLight::widgets() {
     attenuationWidgets(m_constant, m_linear, m_quadratic);
 }
 
-void SpotLight::setShaderUniforms(const Shader *const shader) const {
-    const std::string name = "spotLight";
-    setColorUniforms(shader, name);
+void SpotLight::setShaderUniforms(const Shader *const shader, const std::string &name) const {
+    setBaseUniforms(shader, name);
 
     shader->setVec3(name + ".position", m_position);
     shader->setVec3(name + ".direction", m_direction);
@@ -115,8 +123,7 @@ void SpotLight::setShaderUniforms(const Shader *const shader) const {
     shader->setFloat(name + ".quadratic", m_quadratic);
 }
 
-Light::Type SpotLight::getType() const {
-    return Type::Spot;
+void SpotLight::draw(const Shader *shader) {
 }
 
 void attenuationWidgets(float &c, float &l, float &q) {
@@ -134,7 +141,7 @@ void LightManager::widgets() {
         constexpr std::array lightTypes = {"Directional", "Point", "Spot"};
         ImGui::Combo("Type", &m_selectedLight, lightTypes.data(), lightTypes.size());
         ImGui::SameLine();
-        if (ImGui::SmallButton("Add")) {
+        if (ImGui::Button("Add")) {
             switch (m_selectedLight) {
                 case 0:
                     add(std::make_unique<DirectionalLight>(glm::vec3(0.0f, -1.0f, 0.0f)));
@@ -192,10 +199,20 @@ void LightManager::update(const Camera *const camera) {
 }
 
 void LightManager::setShaderUniforms(const Shader *shader) const {
-    for (const auto &light: m_lights) {
-        light->setShaderUniforms(shader);
+    shader->setInt("lightCount", static_cast<int>(m_lights.size() + 1));
+    for (auto i = 0; i < m_lights.size(); ++i) {
+        const auto name = fmt::format("lights[{}]", i);
+        const auto light = m_lights[i].get();
+        light->setShaderUniforms(shader, name);
     }
-    m_flashlight.setShaderUniforms(shader);
+    const auto name = fmt::format("lights[{}]", m_lights.size());
+    m_flashlight.setShaderUniforms(shader, name);
+}
+
+void LightManager::draw(const Shader *const shader) const {
+    for (auto &light: m_lights) {
+        light->draw(shader);
+    }
 }
 
 void LightManager::remove(auto index) {

@@ -72,10 +72,6 @@ void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
     glUniformMatrix4fv(glGetUniformLocation(m_programId, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 
-void Shader::setLight(const Light *const light) const {
-    light->setShaderUniforms(this);
-}
-
 GLuint Shader::compile(const std::string &source, const GLuint type) {
     const auto shader = glCreateShader(type);
     const char *shaderCode = source.c_str();

@@ -30,21 +30,25 @@ public:
 
     virtual ~Light() = default;
 
-    virtual void setShaderUniforms(const Shader *shader) const = 0;
+    virtual void setShaderUniforms(const Shader *shader, const std::string &name) const = 0;
 
     virtual void widgets();
 
-    virtual Type getType() const = 0;
+    virtual void draw(const Shader *shader) = 0;
+
+    Type getType() const;
 
 protected:
-    Light(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular);
+    Light(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, Type type);
 
-    void setColorUniforms(const Shader *const shader, const std::string &name) const;
+    void setBaseUniforms(const Shader *const shader, const std::string &name) const;
 
-private:
     glm::vec3 m_ambient;
     glm::vec3 m_diffuse;
     glm::vec3 m_specular;
+
+private:
+    Type m_type;
 };
 
 class DirectionalLight final : public Light {
@@ -55,11 +59,11 @@ public:
 
     void widgets() override;
 
-    void setShaderUniforms(const Shader *const shader) const override;
+    void setShaderUniforms(const Shader *const shader, const std::string &name) const override;
 
     [[nodiscard]] const glm::vec3 &getDirection() const { return m_direction; }
 
-    Type getType() const override;
+    void draw(const Shader *shader) override;
 
 private:
     glm::vec3 m_direction;
@@ -73,7 +77,7 @@ public:
 
     void widgets() override;
 
-    void setShaderUniforms(const Shader *const shader) const override;
+    void setShaderUniforms(const Shader *const shader, const std::string &name) const override;
 
     [[nodiscard]] const glm::vec3 &getPosition() const { return m_position; };
 
@@ -83,7 +87,7 @@ public:
 
     [[nodiscard]] float getQuadratic() const { return m_quadratic; }
 
-    Type getType() const override;
+    void draw(const Shader *shader) override;
 
 private:
     glm::vec3 m_position;
@@ -102,7 +106,7 @@ public:
 
     void widgets() override;
 
-    void setShaderUniforms(const Shader *const shader) const override;
+    void setShaderUniforms(const Shader *const shader, const std::string &name) const override;
 
     [[nodiscard]] const glm::vec3 &getPosition() const { return m_position; }
 
@@ -122,7 +126,7 @@ public:
 
     [[nodiscard]] float getQuadratic() const { return m_quadratic; }
 
-    Type getType() const override;
+    void draw(const Shader *shader) override;
 
 private:
     glm::vec3 m_position;
@@ -149,6 +153,8 @@ public:
     void update(const Camera *camera);
 
     void setShaderUniforms(const Shader *shader) const;
+
+    void draw(const Shader *shader) const;
 
 private:
     void remove(auto index);
