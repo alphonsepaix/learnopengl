@@ -24,7 +24,7 @@
 
 int main() {
     // auto alone will strip the reference, giving errors (we deleted the copy and assignment constructors).
-    auto &instance = CameraManager::getInstance();
+    auto &cameraManager = CameraManager::getInstance();
 
     // Create a GLFW window.
     glfwInit();
@@ -61,7 +61,7 @@ int main() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;;
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
@@ -165,20 +165,9 @@ int main() {
     auto cubeTranslation = glm::vec3(0.0f);
     auto objectMaterial = Material{containerDiffuseMap, containerSpecularMap, 7};
 
-    // auto light = DirectionalLight{
-    //     glm::vec3(-0.2f, -1.0f, -0.3f),
-    //     glm::vec3(0.1f),
-    //     glm::vec3(1.0f),
-    //     glm::vec3(1.0f),
-    // };
-
-    std::vector<std::unique_ptr<Light> > lights;
-    lights.push_back(std::make_unique<DirectionalLight>(glm::vec3(-1.0f)));
-    lights.push_back(std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));
-    lights.push_back(std::make_unique<SpotLight>(
-        instance.getActiveCamera()->getPosition(),
-        instance.getActiveCamera()->getFront()
-    ));
+    LightManager lightManager;
+    lightManager.add(std::make_unique<DirectionalLight>(glm::vec3(-1.0f)));
+    lightManager.add(std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));
 
     auto cubes = std::to_array<std::tuple<glm::vec3, float> >({
         {glm::vec3(0.0f, 0.0f, 0.0f), 1.2f},
@@ -209,6 +198,7 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui::NewFrame();
 
+        ImGui::Begin("Performances");
         if (deltaTimeAdded > 1.0f) {
             std::stringstream ss;
             deltaTimeAdded -= 1.0f;
@@ -217,30 +207,31 @@ int main() {
             performanceStr = ss.str();
         }
         ImGui::Text(performanceStr.c_str());
+        ImGui::End();
 
-        ImGui::SeparatorText("Window");
-        ImGui::Text(("Width: " + std::to_string(WINDOW_WIDTH)).c_str());
-        ImGui::SameLine();
-        ImGui::Text(("Height: " + std::to_string(WINDOW_HEIGHT)).c_str());
-        ImGui::ColorEdit3("Background", glm::value_ptr(backgroundColor));
+        ImGui::Begin("Settings");
 
-        // Objects
-        ImGui::SeparatorText("Cubes");
-        ImGui::Checkbox("Wireframe", &wireframe);
-        ImGui::SliderFloat3("Offset", glm::value_ptr(cubeTranslation), -10.0f, 10.0f);
-        ImGui::SliderFloat("Scale", &cubeGlobalScale, 0.0f, 10.0f);
-        ImGui::Checkbox("Pause rotation", &isPaused);
-        ImGui::Checkbox("Emission map", &emissionOn);
-        objectMaterial.widgets();
+        if (ImGui::CollapsingHeader("Window")) {
+            ImGui::Text(("Width: " + std::to_string(WINDOW_WIDTH)).c_str());
+            ImGui::SameLine();
+            ImGui::Text(("Height: " + std::to_string(WINDOW_HEIGHT)).c_str());
+            ImGui::ColorPicker3("##Background", glm::value_ptr(backgroundColor));
+        }
 
-        // Light
-        ImGui::SeparatorText("Lights");
-        for (auto &light: lights)
-            light.get()->widgets();
+        if (ImGui::CollapsingHeader("Objects")) {
+            ImGui::Checkbox("Wireframe", &wireframe);
+            ImGui::SliderFloat3("Offset", glm::value_ptr(cubeTranslation), -10.0f, 10.0f);
+            ImGui::SliderFloat("Scale", &cubeGlobalScale, 0.0f, 10.0f);
+            ImGui::Checkbox("Pause rotation", &isPaused);
+            ImGui::Checkbox("Emission map", &emissionOn);
+            objectMaterial.widgets();
+        }
 
-        ImGui::SeparatorText("Camera");
-        instance.widgets(); // switch camera
-        instance.getActiveCamera()->widgets(); // camera widget
+        lightManager.widgets();
+
+        cameraManager.widgets();
+
+        ImGui::End();
 
         if (wireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -248,7 +239,7 @@ int main() {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
 
-        auto view = instance.getActiveCamera()->lookAt();
+        auto view = cameraManager.getActiveCamera()->lookAt();
         auto projection = glm::perspective(glm::radians(fov),
                                            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f,
                                            100.0f);
@@ -270,9 +261,9 @@ int main() {
         cubeShader.use();
         cubeShader.setFloat("material.shininess", objectMaterial.getShininess());
         cubeShader.setBool("emissionOn", emissionOn);
-        for (const auto &light: lights)
-            cubeShader.setLight(light.get());
-        auto viewPos = instance.getActiveCamera()->getPosition();
+        lightManager.update(cameraManager.getActiveCamera());
+        lightManager.setShaderUniforms(&cubeShader);
+        auto viewPos = cameraManager.getActiveCamera()->getPosition();
         cubeShader.setVec3("viewPos", viewPos);
         for (std::size_t i = 0; const auto &[cubeCenter, cubeScale]: cubes) {
             auto model = glm::mat4(1.0f);

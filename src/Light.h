@@ -1,9 +1,13 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
+#include <memory>
 #include <glm/glm.hpp>
 
+#include "Camera.h"
+
 #include <string>
+#include <vector>
 
 class Shader;
 
@@ -20,11 +24,17 @@ constexpr auto OUTER_CUTOFF = 20.0f; // in degrees
 
 class Light {
 public:
+    enum class Type { Directional, Point, Spot };
+
+    static std::string getTypeStr(Type type);
+
     virtual ~Light() = default;
 
     virtual void setShaderUniforms(const Shader *shader) const = 0;
 
     virtual void widgets();
+
+    virtual Type getType() const = 0;
 
 protected:
     Light(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular);
@@ -47,7 +57,9 @@ public:
 
     void setShaderUniforms(const Shader *const shader) const override;
 
-    [[nodiscard]] const glm::vec3 &getDirection() const { return m_direction; };
+    [[nodiscard]] const glm::vec3 &getDirection() const { return m_direction; }
+
+    Type getType() const override;
 
 private:
     glm::vec3 m_direction;
@@ -70,6 +82,8 @@ public:
     [[nodiscard]] float getLinear() const { return m_linear; }
 
     [[nodiscard]] float getQuadratic() const { return m_quadratic; }
+
+    Type getType() const override;
 
 private:
     glm::vec3 m_position;
@@ -108,6 +122,8 @@ public:
 
     [[nodiscard]] float getQuadratic() const { return m_quadratic; }
 
+    Type getType() const override;
+
 private:
     glm::vec3 m_position;
     glm::vec3 m_direction;
@@ -121,5 +137,25 @@ private:
 };
 
 void attenuationWidgets(float &c, float &l, float &q);
+
+class LightManager {
+public:
+    LightManager();
+
+    void widgets();
+
+    void add(std::unique_ptr<Light> light);
+
+    void update(const Camera *camera);
+
+    void setShaderUniforms(const Shader *shader) const;
+
+private:
+    void remove(auto index);
+
+    std::vector<std::unique_ptr<Light> > m_lights;
+    SpotLight m_flashlight;
+    int m_selectedLight;
+};
 
 #endif

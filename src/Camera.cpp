@@ -105,7 +105,8 @@ CameraFps::CameraFps(const glm::vec3 &position, float speed): Camera{position, s
 void CameraFps::move(const Direction &direction, const float deltaTime) {
     glm::vec3 delta;
     switch (direction) {
-        case Direction::Up: case Direction::Down:
+        case Direction::Up:
+        case Direction::Down:
             return;
         case Direction::Forward:
             delta = m_front;
@@ -181,22 +182,25 @@ void CameraManager::setActiveCamera(const Type camera) {
 }
 
 void CameraManager::widgets() {
-    constexpr std::array cameraTypes = {"Free", "FPS", "Locked"};
-    int cameraIndex = getCameraIndex(m_activeCameraType);
-    ImGui::Combo("Camera", &cameraIndex, cameraTypes.data(),
-                 cameraTypes.size());
-    switch (cameraIndex) {
-        case 0:
-            setActiveCamera(Type::Free);
-            break;
-        case 1:
-            setActiveCamera(Type::FPS);
-            break;
-        case 2:
-            setActiveCamera(Type::Lock);
-            break;
-        default:
-            break;
+    if (ImGui::CollapsingHeader("Camera")) {
+        constexpr std::array cameraTypes = {"Free", "FPS", "Locked"};
+        int cameraIndex = getCameraIndex(m_activeCameraType);
+        ImGui::Combo("Camera", &cameraIndex, cameraTypes.data(),
+                     cameraTypes.size());
+        switch (cameraIndex) {
+            case 0:
+                setActiveCamera(Type::Free);
+                break;
+            case 1:
+                setActiveCamera(Type::FPS);
+                break;
+            case 2:
+                setActiveCamera(Type::Lock);
+                break;
+            default:
+                break;
+        }
+        getActiveCamera()->widgets(); // camera widget
     }
 }
 
