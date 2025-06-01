@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-Texture::Texture(const std::string &texturePath): m_textureId{0} {
+Texture::Texture(const std::string &texturePath, const Type type): m_textureId{0}, m_type{type} {
     glGenTextures(1, &m_textureId);
     bind();
     int width, height, nrChannels;

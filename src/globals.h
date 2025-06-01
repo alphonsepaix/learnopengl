@@ -11,6 +11,7 @@ inline extern constexpr auto WINDOW_TITLE = "Learn OpenGL";
 
 inline extern const std::string SHADER_DIR = "assets/shaders/";
 inline extern const std::string TEXTURE_DIR = "assets/textures/";
+inline extern const std::string MODELS_DIR = "assets/models/";
 
 inline extern float deltaTime = 0.0f;
 inline extern float deltaTimeAdded = 0.0f;

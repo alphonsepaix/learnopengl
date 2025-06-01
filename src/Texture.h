@@ -7,6 +7,10 @@
 
 class Texture {
 public:
+    enum class Type {
+        Diffuse, Specular
+    };
+
     enum class Wrap {
         Repeat = GL_REPEAT,
         MirroredRepeat = GL_MIRRORED_REPEAT,
@@ -23,7 +27,7 @@ public:
         LinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR,
     };
 
-    explicit Texture(const std::string &texturePath);
+    explicit Texture(const std::string &texturePath, Type type = Type::Diffuse);
 
     void bind() const;
 
@@ -36,8 +40,11 @@ public:
 
     void setBorderColor(const GLfloat *params) const;
 
+    [[nodiscard]] Type getType() const { return m_type; }
+
 private:
     GLuint m_textureId;
+    Type m_type;
 };
 
 #endif

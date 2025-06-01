@@ -17,6 +17,7 @@
 #include "Texture.h"
 #include "events.h"
 #include "globals.h"
+#include "Model.h"
 
 #include <array>
 #include <iostream>
@@ -142,11 +143,7 @@ int main() {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    const auto cubeShader = Shader(SHADER_DIR + "cube.vert", SHADER_DIR + "cube.frag");
-    cubeShader.use();
-    cubeShader.setInt("material.diffuse", 0);
-    cubeShader.setInt("material.specular", 1);
-    cubeShader.setInt("material.emission", 2);
+    const auto objectShader = Shader(SHADER_DIR + "object.vert", SHADER_DIR + "object.frag");
     const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
 
     bool isPaused = true;
@@ -157,9 +154,6 @@ int main() {
     auto containerDiffuseMap = Texture{TEXTURE_DIR + "container.png"};
     auto containerSpecularMap = Texture{TEXTURE_DIR + "container_specular.png"};
     auto containerEmissionMap = Texture(TEXTURE_DIR + "matrix.jpg");
-    containerDiffuseMap.setUnit(0);
-    containerSpecularMap.setUnit(1);
-    containerEmissionMap.setUnit(2);
     auto cubeGlobalScale = 1.0f;
     auto cubeRotationAngle = 0.0f; // in degrees
     auto cubeTranslation = glm::vec3(0.0f);
@@ -181,6 +175,16 @@ int main() {
         {glm::vec3(1.5f, 0.2f, -1.5f), 0.9f},
         {glm::vec3(-1.3f, 1.0f, -1.5f), 1.0f},
     });
+
+    // Load the backpack model.
+    dbg("Loading model...");
+    auto path = MODELS_DIR + "backpack/backpack.obj";
+    auto backpack = Model{path};
+    dbg("Model loaded: {}", path);
+    auto backpackModel = glm::mat4(1.0f);
+    backpackModel = glm::translate(backpackModel, glm::vec3(-6.0f, -2.0f, 1.0f));
+    backpackModel = glm::rotate(backpackModel, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    auto backpackNormalMatrix = glm::mat3(glm::transpose(glm::inverse(backpackModel)));
 
     while (!glfwWindowShouldClose(window)) {
         const auto currentFrame = static_cast<float>(glfwGetTime());
@@ -256,13 +260,20 @@ int main() {
         lightManager.draw(&lightShader);
 
         // Render the cubes.
-        cubeShader.use();
-        cubeShader.setFloat("material.shininess", objectMaterial.getShininess());
-        cubeShader.setBool("emissionOn", emissionOn);
+        objectShader.use();
+        objectShader.setInt("material.texture_diffuse1", 0);
+        objectShader.setInt("material.texture_specular1", 1);
+        objectShader.setInt("material.emission", 2);
+        containerDiffuseMap.setUnit(0);
+        containerSpecularMap.setUnit(1);
+        containerEmissionMap.setUnit(2);
+        objectShader.use();
+        objectShader.setFloat("material.shininess", objectMaterial.getShininess());
+        objectShader.setBool("emissionOn", emissionOn);
         lightManager.update(cameraManager.getActiveCamera());
-        lightManager.setShaderUniforms(&cubeShader);
+        lightManager.setShaderUniforms(&objectShader);
         auto viewPos = cameraManager.getActiveCamera()->getPosition();
-        cubeShader.setVec3("viewPos", viewPos);
+        objectShader.setVec3("viewPos", viewPos);
         for (std::size_t i = 0; const auto &[cubeCenter, cubeScale]: cubes) {
             auto model = glm::mat4(1.0f);
             model = glm::translate(model, cubeCenter);
@@ -288,14 +299,19 @@ int main() {
 
             auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
 
-            cubeShader.setMat3("normalMatrix", normalMatrix);
-            cubeShader.setMat4("model", model);
-            cubeShader.setMat4("view", view);
-            cubeShader.setMat4("projection", projection);
+            objectShader.setMat3("normalMatrix", normalMatrix);
+            objectShader.setMat4("model", model);
+            objectShader.setMat4("view", view);
+            objectShader.setMat4("projection", projection);
             glBindVertexArray(cubeVao);
             glDrawArrays(GL_TRIANGLES, 0, 36);
             ++i;
         }
+
+        // Render the backpack model.
+        objectShader.setMat3("normalMatrix", backpackNormalMatrix);
+        objectShader.setMat4("model", backpackModel);
+        backpack.draw(objectShader);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
