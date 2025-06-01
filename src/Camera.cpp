@@ -1,5 +1,6 @@
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
+#include <fmt/format.h>
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -91,10 +92,7 @@ void Camera::update() {
 }
 
 void Camera::baseWidgets() {
-    std::stringstream ss;
-    ss << "Position: (" << std::setprecision(3) << m_position.x << "," <<
-            m_position.y << "," << m_position.z << ")";
-    const auto position = ss.str();
+    const auto position = fmt::format("Position: ({}, {}, {})", m_position.x, m_position.y, m_position.z);
     ImGui::Text(position.c_str());
     ImGui::SliderFloat("Speed", &m_speed, 0.1f, 10.0f);
 }

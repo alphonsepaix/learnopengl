@@ -157,8 +157,6 @@ public:
     void draw(const Shader *shader) const;
 
 private:
-    void remove(auto index);
-
     std::vector<std::unique_ptr<Light> > m_lights;
     SpotLight m_flashlight;
     int m_selectedLight;

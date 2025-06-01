@@ -1,3 +1,5 @@
+#define DBG_MACRO_NO_WARNING
+#include <dbg.h>
 #include <fmt/format.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
@@ -166,11 +168,11 @@ void LightManager::widgets() {
             ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.6f, 0.6f)));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.7f, 0.7f)));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.8f, 0.8f)));
-            ImGui::PopStyleColor(3);
             ImGui::SameLine();
             if (ImGui::Button("Remove")) {
                 removeIndex = i;
             }
+            ImGui::PopStyleColor(3);
             if (open) {
                 light->widgets();
                 ImGui::TreePop();
@@ -179,7 +181,7 @@ void LightManager::widgets() {
         }
         if (removeIndex != -1) {
             m_lights.erase(m_lights.begin() + removeIndex);
-            std::cout << "Removing light at index: " << removeIndex << '\n';
+            dbg("Removing light with index: " + std::to_string(removeIndex));
         }
 
         if (ImGui::TreeNode("Flashlight")) {
@@ -210,11 +212,7 @@ void LightManager::setShaderUniforms(const Shader *shader) const {
 }
 
 void LightManager::draw(const Shader *const shader) const {
-    for (auto &light: m_lights) {
-        light->draw(shader);
+    for (auto i = 0; i < m_lights.size(); ++i) {
+        m_lights[i].get()->draw(shader);
     }
-}
-
-void LightManager::remove(auto index) {
-    m_lights.erase(index);
 }
