@@ -1,6 +1,5 @@
 #include <fmt/format.h>
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -18,52 +17,45 @@
 #include "events.h"
 #include "globals.h"
 #include "Model.h"
+#include "Window.h"
 
 #include <array>
 #include <iostream>
 #include <tuple>
 
+int WINDOW_WIDTH = 1600;
+int WINDOW_HEIGHT = 900;
+
+const std::string SHADER_DIR = "assets/shaders/";
+const std::string TEXTURE_DIR = "assets/textures/";
+const std::string MODELS_DIR = "assets/models/";
+
+float deltaTime = 0.0f;
+float deltaTimeAdded = 0.0f;
+float lastFrame = 0.0f;
+std::string performanceStr = "Starting...";
+
+bool firstMouse = true;
+double lastX = WINDOW_WIDTH / 2.0;
+double lastY = WINDOW_HEIGHT / 2.0;
+
+bool cursorLocked = true;
+bool cursorJustUnlocked = false;
+
+float fov = 45.0f;
+
 int main() {
     // auto alone will strip the reference, giving errors (we deleted the copy and assignment constructors).
     auto &cameraManager = CameraManager::getInstance();
 
-    // Create a GLFW window.
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    // Tell GLFW we want to use the core-profile (a smaller and more modern subset of OpenGL).
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow *window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT,
-                                          WINDOW_TITLE, nullptr, nullptr);
-    if (window == nullptr) {
-        std::cerr << "Failed to create GLFW window\n";
-        glfwTerminate();
-        return -1;
-    }
-    // Make the context of the window the main context on the current thread.
-    glfwMakeContextCurrent(window);
-
-    // Initialize GLAD.
-    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::cerr << "Failed to initialize GLAD\n";
-        return -1;
-    }
-
-    // Tell OpenGL the size of our rendering window so it can display data and coordinates correctly.
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-    glfwSwapInterval(1);
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-    glfwSetCursorPosCallback(window, mouseCallback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetScrollCallback(window, scrollCallback);
-    glEnable(GL_DEPTH_TEST);
+    auto window = Window{WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE};
 
     // Setup Dear ImGui context and backends.
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;;
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplGlfw_InitForOpenGL(window.getHandle(), true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
     // clang-format off
@@ -186,13 +178,13 @@ int main() {
     backpackModel = glm::rotate(backpackModel, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     auto backpackNormalMatrix = glm::mat3(glm::transpose(glm::inverse(backpackModel)));
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!window.shouldClose()) {
         const auto currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         deltaTimeAdded += deltaTime;
 
-        processInput(window);
+        processInput(window.getHandle());
 
         glClearColor(backgroundColor.r, backgroundColor.g, backgroundColor.b, 1.0); // state-setting
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // state-using
@@ -210,15 +202,14 @@ int main() {
             ss << "Application average: " << deltaTime * 1000 << "ms/frame (" << fps << " FPS)\n";
             performanceStr = ss.str();
         }
-        ImGui::Text(performanceStr.c_str());
+        ImGui::Text("%s", performanceStr.c_str());
         ImGui::End();
 
         ImGui::Begin("Settings");
 
         if (ImGui::CollapsingHeader("Window")) {
-            ImGui::Text(("Width: " + std::to_string(WINDOW_WIDTH)).c_str());
-            ImGui::SameLine();
-            ImGui::Text(("Height: " + std::to_string(WINDOW_HEIGHT)).c_str());
+            auto s = fmt::format("Window size: ({}, {})", WINDOW_WIDTH, WINDOW_HEIGHT);
+            ImGui::Text("%s", s.c_str());
             ImGui::ColorPicker3("##Background", glm::value_ptr(backgroundColor));
         }
 
@@ -247,10 +238,6 @@ int main() {
         auto projection = glm::perspective(glm::radians(fov),
                                            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f,
                                            100.0f);
-
-        // auto lightModel = glm::mat4(1.0f);
-        // lightModel = glm::translate(lightModel, light.position);
-        // lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 
         // Render the light sources.
         lightShader.use();
@@ -315,12 +302,10 @@ int main() {
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        glfwSwapBuffers(window); // double buffering
-        glfwPollEvents();
+        window.swapBuffers();
     }
 
     ImGui_ImplGlfw_Shutdown();
     ImGui_ImplOpenGL3_Shutdown();
-    glfwTerminate();
     return 0;
 }

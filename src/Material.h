@@ -16,7 +16,7 @@ struct Material {
         ImGui::SameLine();
         const auto value = static_cast<float>(std::pow(2, shininess));
         const auto text = fmt::format("({})", value);
-        ImGui::Text(text.c_str());
+        ImGui::Text("%s", text.c_str());
     }
 
     [[nodiscard]] float getShininess() const {
