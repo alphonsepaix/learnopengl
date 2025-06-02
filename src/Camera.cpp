@@ -7,9 +7,12 @@
 
 #include "Camera.h"
 
+#include <algorithm>
 #include <array>
 #include <utility>
-#include <sstream>
+
+constexpr float MIN_FOV = 1.0f;
+constexpr float MAX_FOV = 70.0f;
 
 Camera::Camera(const glm::vec3 &position, const float speed): m_position{position},
                                                               m_speed{speed},
@@ -179,6 +182,10 @@ void CameraManager::setActiveCamera(const Type camera) {
     }
 }
 
+void CameraManager::updateFov(float yOffset) {
+    m_fov = std::clamp(m_fov - yOffset, MIN_FOV, MAX_FOV);
+}
+
 void CameraManager::widgets() {
     if (ImGui::CollapsingHeader("Camera")) {
         constexpr std::array cameraTypes = {"Free", "FPS", "Locked"};
@@ -199,10 +206,11 @@ void CameraManager::widgets() {
                 break;
         }
         getActiveCamera()->widgets(); // camera widget
+        ImGui::Text("FOV: %f", m_fov);
     }
 }
 
-CameraManager::CameraManager(): m_activeCameraType{Type::Free} {
+CameraManager::CameraManager(): m_fov{MAX_FOV}, m_activeCameraType{Type::Free} {
     constexpr auto initialPos = glm::vec3(0.0f, 0.0f, 3.0f);
     m_cameras[Type::Free] = std::make_unique<Camera>(initialPos);
     m_cameras[Type::FPS] = std::make_unique<CameraFps>(initialPos);

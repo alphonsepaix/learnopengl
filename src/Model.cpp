@@ -3,19 +3,25 @@
 #include <assimp/postprocess.h>
 #include <dbg.h>
 #include <fmt/format.h>
+#include <glm/gtc/type_ptr.hpp>
+#include <nfd.h>
 
 #include "Model.h"
+#include "utils.h"
 
+#include <imgui.h>
 #include <unordered_map>
 
 std::unordered_map<std::string, std::unique_ptr<Texture> > loadedTextures;
+
+const std::string MODEL_DIR = "assets/models/";
 
 Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices,
            const std::vector<Texture> &textures): m_vertices{vertices}, m_indices{indices}, m_textures{textures} {
     setupMesh();
 }
 
-void Mesh::draw(const Shader &shader) const {
+void Mesh::draw(const Shader *shader) const {
     auto diffuseNr = 1;
     auto specularNr = 1;
 
@@ -35,7 +41,7 @@ void Mesh::draw(const Shader &shader) const {
                 break;
         }
         name = fmt::format("material.texture_{}{}", name, number);
-        shader.setInt(name, i);
+        shader->setInt(name, i);
         texture.bind();
     }
     glActiveTexture(GL_TEXTURE0);
@@ -73,7 +79,7 @@ Model::Model(const std::string &path) {
     loadModel(path);
 }
 
-void Model::draw(const Shader &shader) const {
+void Model::draw(const Shader *shader) const {
     for (const auto &mesh: m_meshes)
         mesh.draw(shader);
 }
@@ -109,7 +115,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 
     // Process vertices.
     for (auto i = 0; i < mesh->mNumVertices; ++i) {
-        Vertex vertex;
+        Vertex vertex{};
 
         // Positions.
         glm::vec3 vec;
@@ -158,7 +164,7 @@ std::vector<Texture> Model::loadMaterialTextures(const aiMaterial *const mat, co
     for (auto i = 0; i < mat->GetTextureCount(type); ++i) {
         aiString str;
         mat->GetTexture(type, i, &str);
-        auto path = fmt::format("{}/{}", m_directory, str.C_Str());
+        auto path = fmt::format("{}\\{}", m_directory, str.C_Str());
         if (const auto it = loadedTextures.find(path); it != loadedTextures.end()) {
             textures.push_back(*it->second);
         } else {
@@ -170,4 +176,57 @@ std::vector<Texture> Model::loadMaterialTextures(const aiMaterial *const mat, co
         }
     }
     return textures;
+}
+
+std::pair<glm::mat4, glm::mat3> ModelMatrix::compute() const {
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, translation);
+    model = glm::scale(model, glm::vec3(scale));
+    model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+    auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+    return {model, normalMatrix};
+}
+
+ModelManager::ModelManager() {
+    loadObject(MODEL_DIR + "cube/cube.obj");
+}
+
+void ModelManager::widgets() {
+    if (ImGui::CollapsingHeader("Objects")) {
+        if (ImGui::Button("Add a new object")) {
+            constexpr nfdu8filteritem_t filters[1] = {{"Object", "obj"}};
+            auto path = fileDialog(filters, 1);
+            loadObject(path);
+        }
+
+        ImGui::SeparatorText("Objets");
+        for (auto i = 0; i < m_objects.size(); ++i) {
+            ImGui::PushID(i);
+            if (ImGui::TreeNode(fmt::format("Object #{}", i).c_str())) {
+                ImGui::SliderFloat3("Position", glm::value_ptr(m_models[i].translation), -10.0f, 10.0f);
+                ImGui::SliderFloat3("Rotation", glm::value_ptr(m_models[i].rotation), -180.0f, 180.0f);
+                ImGui::SliderFloat("Scale", &m_models[i].scale, 0.0f, 10.0f);
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+    }
+}
+
+void ModelManager::draw(const Shader *shader) const {
+    for (auto i = 0; i < m_objects.size(); ++i) {
+        auto [model, normalMatrix] = m_models[i].compute();
+        shader->setMat4("model", model);
+        shader->setMat3("normalMatrix", normalMatrix);
+        m_objects[i].draw(shader);
+    }
+}
+
+void ModelManager::loadObject(const std::string &path) {
+    dbg("Loading object '{}'...", path);
+    auto object = Model{path};
+    m_objects.push_back(std::move(object));
+    m_models.push_back(ModelMatrix{});
 }

@@ -33,9 +33,9 @@ struct Light {
 };
 
 uniform Material material;
-uniform Light lights[30];
+uniform bool emission;
 uniform vec3 viewPos;
-uniform bool emissionOn;
+uniform Light lights[30];
 uniform int lightCount;
 
 vec3 calcDirLight(Light light, vec3 normal, vec3 viewDir);
@@ -62,7 +62,7 @@ void main() {
         }
     }
 
-    if (emissionOn)
+    if (emission)
     {
         float borderWidth = 0.1f;
         float mask = step(borderWidth, TexCoords.x)

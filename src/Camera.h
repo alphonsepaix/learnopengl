@@ -105,9 +105,9 @@ public:
 
     CameraManager &operator=(const CameraManager &) = delete;
 
-    static CameraManager &getInstance() {
+    static CameraManager *getInstance() {
         static CameraManager instance;
-        return instance;
+        return &instance;
     };
 
     [[nodiscard]] Camera *getActiveCamera() const {
@@ -116,6 +116,10 @@ public:
 
     void setActiveCamera(Type camera);
 
+    float getFov() const { return m_fov; }
+
+    void updateFov(float fov);
+
     void widgets();
 
 private:
@@ -123,6 +127,7 @@ private:
 
     static int getCameraIndex(Type type);
 
+    float m_fov;
     Type m_activeCameraType;
     Camera *m_activeCamera;
     std::unordered_map<Type, std::unique_ptr<Camera> > m_cameras;

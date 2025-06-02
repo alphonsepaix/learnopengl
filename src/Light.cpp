@@ -134,7 +134,65 @@ void attenuationWidgets(float &c, float &l, float &q) {
 }
 
 LightManager::LightManager(): m_flashlight{SpotLight{glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f)}},
-                              m_selectedLight{0} {
+                              m_selectedLight{0}, m_flashLightOn(false) {
+    // clang-format off
+    constexpr std::array vertices = {
+        -0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+
+        -0.5f, -0.5f,  0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
+
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+
+        -0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f, -0.5f,
+
+        -0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f
+    };
+    // clang-format on
+
+    glGenVertexArrays(1, &m_lightVao);
+    glBindVertexArray(m_lightVao);
+    GLuint lightVbo;
+    glGenBuffers(1, &lightVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, lightVbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
+                 vertices.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                          static_cast<GLvoid *>(nullptr));
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void LightManager::widgets() {
@@ -164,7 +222,6 @@ void LightManager::widgets() {
         for (auto i = 0; i < m_lights.size(); ++i) {
             const auto light = m_lights[i].get();
             ImGui::PushID(i);
-            auto open = ImGui::TreeNode(fmt::format("Light #{} ({})", i, Light::getTypeStr(light->getType())).c_str());
             ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.6f, 0.6f)));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.7f, 0.7f)));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.8f, 0.8f)));
@@ -173,7 +230,8 @@ void LightManager::widgets() {
                 removeIndex = i;
             }
             ImGui::PopStyleColor(3);
-            if (open) {
+            if (ImGui::TreeNode(
+                fmt::format("Light #{} ({})", i, Light::getTypeStr(light->getType())).c_str())) {
                 light->widgets();
                 ImGui::TreePop();
             }
@@ -181,10 +239,10 @@ void LightManager::widgets() {
         }
         if (removeIndex != -1) {
             m_lights.erase(m_lights.begin() + removeIndex);
-            dbg("Removing light with index: " + std::to_string(removeIndex));
         }
 
         if (ImGui::TreeNode("Flashlight")) {
+            ImGui::Checkbox("Toggle", &m_flashLightOn);
             m_flashlight.widgets();
             ImGui::TreePop();
         }
@@ -201,17 +259,21 @@ void LightManager::update(const Camera *const camera) {
 }
 
 void LightManager::setShaderUniforms(const Shader *shader) const {
-    shader->setInt("lightCount", static_cast<int>(m_lights.size() + 1));
     for (auto i = 0; i < m_lights.size(); ++i) {
         const auto name = fmt::format("lights[{}]", i);
         const auto light = m_lights[i].get();
         light->setShaderUniforms(shader, name);
     }
-    const auto name = fmt::format("lights[{}]", m_lights.size());
-    m_flashlight.setShaderUniforms(shader, name);
+    auto size = m_lights.size();
+    if (m_flashLightOn) {
+        const auto name = fmt::format("lights[{}]", size++);
+        m_flashlight.setShaderUniforms(shader, name);
+    }
+    shader->setInt("lightCount", static_cast<int>(size));
 }
 
 void LightManager::draw(const Shader *const shader) const {
+    glBindVertexArray(m_lightVao);
     for (auto i = 0; i < m_lights.size(); ++i) {
         m_lights[i].get()->draw(shader);
     }

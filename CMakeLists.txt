@@ -44,7 +44,13 @@ FetchContent_Declare(
         GIT_TAG v5.4.3
 )
 
-FetchContent_MakeAvailable(glfw glm dbg_macro imgui fmt assimp)
+FetchContent_Declare(
+        nfd
+        GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended
+        GIT_TAG v1.2.1
+)
+
+FetchContent_MakeAvailable(glfw glm dbg_macro imgui fmt assimp nfd)
 
 set(IMGUI_DIR ${imgui_SOURCE_DIR})
 add_library(imgui STATIC
@@ -80,4 +86,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         stb
         fmt
         assimp
+        nfd
 )

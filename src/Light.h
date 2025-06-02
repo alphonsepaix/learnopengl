@@ -2,6 +2,7 @@
 #define LIGHT_H
 
 #include <memory>
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include "Camera.h"
@@ -156,10 +157,14 @@ public:
 
     void draw(const Shader *shader) const;
 
+    void toggleFlashLight() { m_flashLightOn = !m_flashLightOn; }
+
 private:
     std::vector<std::unique_ptr<Light> > m_lights;
     SpotLight m_flashlight;
     int m_selectedLight;
+    GLuint m_lightVao;
+    bool m_flashLightOn;
 };
 
 #endif

@@ -16,13 +16,12 @@ struct Vertex {
     glm::vec2 texCoords;
 };
 
-
 class Mesh {
 public:
     Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices,
          const std::vector<Texture> &textures);
 
-    void draw(const Shader &shader) const;
+    void draw(const Shader *shader) const;
 
 private:
     GLuint m_vao, m_vbo, m_ebo;
@@ -35,9 +34,9 @@ private:
 
 class Model {
 public:
-    Model(const std::string &path);
+    explicit Model(const std::string &path);
 
-    void draw(const Shader &shader) const;
+    void draw(const Shader *shader) const;
 
 private:
     std::vector<Mesh> m_meshes;
@@ -52,5 +51,27 @@ private:
     std::vector<Texture> loadMaterialTextures(const aiMaterial *mat, aiTextureType type);
 };
 
+struct ModelMatrix {
+    glm::vec3 translation = glm::vec3(0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f); // in degrees
+    float scale = 1.0f;
+
+    std::pair<glm::mat4, glm::mat3> compute() const;
+};
+
+class ModelManager {
+public:
+    ModelManager();
+
+    void widgets();
+
+    void draw(const Shader *shader) const;
+
+private:
+    std::vector<Model> m_objects;
+    std::vector<ModelMatrix> m_models;
+
+    void loadObject(const std::string &path);
+};
 
 #endif
