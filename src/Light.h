@@ -161,6 +161,8 @@ public:
 
 private:
     std::vector<std::unique_ptr<Light> > m_lights;
+    std::vector<bool> m_activeLights;
+    int m_activeLightsCount;
     SpotLight m_flashlight;
     int m_selectedLight;
     GLuint m_lightVao;

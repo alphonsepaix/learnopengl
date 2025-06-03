@@ -202,9 +202,28 @@ void ModelManager::widgets() {
         }
 
         ImGui::SeparatorText("Objets");
+        int removeIndex = -1;
+
         for (auto i = 0; i < m_objects.size(); ++i) {
             ImGui::PushID(i);
-            if (ImGui::TreeNode(fmt::format("Object #{}", i).c_str())) {
+            const auto treeNode = ImGui::TreeNode(fmt::format("Object #{}", i).c_str());
+            ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.6f, 0.6f)));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.7f, 0.7f)));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.8f, 0.8f)));
+            ImGui::SameLine();
+            if (ImGui::Button("Remove")) {
+                removeIndex = i;
+            }
+            ImGui::PopStyleColor(3);
+            ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.6f, 0.6f)));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.7f, 0.7f)));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.8f, 0.8f)));
+            ImGui::SameLine();
+            if (ImGui::Button("Hide")) {
+                m_activeObjects[i] = !m_activeObjects[i];
+            }
+            ImGui::PopStyleColor(3);
+            if (treeNode) {
                 ImGui::SliderFloat3("Position", glm::value_ptr(m_models[i].translation), -10.0f, 10.0f);
                 ImGui::SliderFloat3("Rotation", glm::value_ptr(m_models[i].rotation), -180.0f, 180.0f);
                 ImGui::SliderFloat("Scale", &m_models[i].scale, 0.0f, 10.0f);
@@ -212,11 +231,17 @@ void ModelManager::widgets() {
             }
             ImGui::PopID();
         }
+
+        if (removeIndex != -1) {
+            m_objects.erase(m_objects.begin() + removeIndex);
+            m_activeObjects.erase(m_activeObjects.begin() + removeIndex);
+        }
     }
 }
 
 void ModelManager::draw(const Shader *shader) const {
     for (auto i = 0; i < m_objects.size(); ++i) {
+        if (!m_activeObjects[i]) continue;
         auto [model, normalMatrix] = m_models[i].compute();
         shader->setMat4("model", model);
         shader->setMat3("normalMatrix", normalMatrix);
@@ -228,5 +253,6 @@ void ModelManager::loadObject(const std::string &path) {
     dbg("Loading object '{}'...", path);
     auto object = Model{path};
     m_objects.push_back(std::move(object));
+    m_activeObjects.push_back(true);
     m_models.push_back(ModelMatrix{});
 }

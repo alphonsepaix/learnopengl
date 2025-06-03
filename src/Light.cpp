@@ -133,7 +133,8 @@ void attenuationWidgets(float &c, float &l, float &q) {
     ImGui::Text(text.c_str());
 }
 
-LightManager::LightManager(): m_flashlight{SpotLight{glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f)}},
+LightManager::LightManager(): m_activeLightsCount{0},
+                              m_flashlight{SpotLight{glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f)}},
                               m_selectedLight{0}, m_flashLightOn(false) {
     // clang-format off
     constexpr std::array vertices = {
@@ -217,11 +218,13 @@ void LightManager::widgets() {
             }
         }
 
-        ImGui::SeparatorText("Active lights");
+        ImGui::SeparatorText("Lights");
         int removeIndex = -1;
         for (auto i = 0; i < m_lights.size(); ++i) {
-            const auto light = m_lights[i].get();
             ImGui::PushID(i);
+            const auto light = m_lights[i].get();
+            const auto treeNode = ImGui::TreeNode(
+                fmt::format("Light #{} ({})", i, Light::getTypeStr(light->getType())).c_str());
             ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.6f, 0.6f)));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.7f, 0.7f)));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.8f, 0.8f)));
@@ -230,8 +233,20 @@ void LightManager::widgets() {
                 removeIndex = i;
             }
             ImGui::PopStyleColor(3);
-            if (ImGui::TreeNode(
-                fmt::format("Light #{} ({})", i, Light::getTypeStr(light->getType())).c_str())) {
+            ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.6f, 0.6f)));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.7f, 0.7f)));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.8f, 0.8f)));
+            ImGui::SameLine();
+            if (ImGui::Button("Hide")) {
+                m_activeLights[i] = !m_activeLights[i];
+                if (m_activeLights[i]) {
+                    m_activeLightsCount++;
+                } else {
+                    m_activeLightsCount--;
+                }
+            }
+            ImGui::PopStyleColor(3);
+            if (treeNode) {
                 light->widgets();
                 ImGui::TreePop();
             }
@@ -239,6 +254,7 @@ void LightManager::widgets() {
         }
         if (removeIndex != -1) {
             m_lights.erase(m_lights.begin() + removeIndex);
+            m_activeLights.erase(m_activeLights.begin() + removeIndex);
         }
 
         if (ImGui::TreeNode("Flashlight")) {
@@ -251,6 +267,8 @@ void LightManager::widgets() {
 
 void LightManager::add(std::unique_ptr<Light> light) {
     m_lights.push_back(std::move(light));
+    m_activeLights.push_back(true);
+    m_activeLightsCount++;
 }
 
 void LightManager::update(const Camera *const camera) {
@@ -259,22 +277,23 @@ void LightManager::update(const Camera *const camera) {
 }
 
 void LightManager::setShaderUniforms(const Shader *shader) const {
-    for (auto i = 0; i < m_lights.size(); ++i) {
-        const auto name = fmt::format("lights[{}]", i);
-        const auto light = m_lights[i].get();
-        light->setShaderUniforms(shader, name);
+    for (int i = 0; auto &light: m_lights) {
+        if (!m_activeLights[i]) continue; // skip inactive lights
+        const auto name = fmt::format("lights[{}]", i++);
+        light.get()->setShaderUniforms(shader, name);
     }
-    auto size = m_lights.size();
+    auto size = m_activeLightsCount;
     if (m_flashLightOn) {
         const auto name = fmt::format("lights[{}]", size++);
         m_flashlight.setShaderUniforms(shader, name);
     }
-    shader->setInt("lightCount", static_cast<int>(size));
+    shader->setInt("lightCount", size);
 }
 
 void LightManager::draw(const Shader *const shader) const {
     glBindVertexArray(m_lightVao);
     for (auto i = 0; i < m_lights.size(); ++i) {
-        m_lights[i].get()->draw(shader);
+        if (!m_activeLights[i]) continue;
+        m_lights[i]->draw(shader);
     }
 }

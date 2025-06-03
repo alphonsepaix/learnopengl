@@ -56,7 +56,7 @@ struct ModelMatrix {
     glm::vec3 rotation = glm::vec3(0.0f); // in degrees
     float scale = 1.0f;
 
-    std::pair<glm::mat4, glm::mat3> compute() const;
+    [[nodiscard]] std::pair<glm::mat4, glm::mat3> compute() const;
 };
 
 class ModelManager {
@@ -69,6 +69,7 @@ public:
 
 private:
     std::vector<Model> m_objects;
+    std::vector<bool> m_activeObjects;
     std::vector<ModelMatrix> m_models;
 
     void loadObject(const std::string &path);
