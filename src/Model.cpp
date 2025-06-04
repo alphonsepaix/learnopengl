@@ -93,7 +93,7 @@ void Model::loadModel(const std::string &path) {
         return;
     }
 
-    m_directory = path.substr(0, path.find_last_of('/'));
+    m_directory = get_directory(path);
 
     processNode(scene->mRootNode, scene);
 }
@@ -164,7 +164,7 @@ std::vector<Texture> Model::loadMaterialTextures(const aiMaterial *const mat, co
     for (auto i = 0; i < mat->GetTextureCount(type); ++i) {
         aiString str;
         mat->GetTexture(type, i, &str);
-        auto path = fmt::format("{}/{}", m_directory, str.C_Str());
+        auto path = join_paths(m_directory, str.C_Str());
         if (const auto it = loadedTextures.find(path); it != loadedTextures.end()) {
             textures.push_back(*it->second);
         } else {
@@ -250,8 +250,7 @@ void ModelManager::draw(const Shader *shader) const {
 }
 
 void ModelManager::loadObject(const std::string &path) {
-    std::cout << "Loading object '" << path << "'..." << std::endl;
-    auto object = Model{path};
+    auto object = Model{normalize_path(path)};
     m_objects.push_back(std::move(object));
     m_activeObjects.push_back(true);
     m_models.push_back(ModelMatrix{});
