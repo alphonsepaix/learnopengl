@@ -220,13 +220,15 @@ void ModelManager::widgets() {
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.8f, 0.8f)));
             ImGui::SameLine();
             if (ImGui::Button("Hide")) {
-                m_activeObjects[i] = !m_activeObjects[i];
+                auto &active = m_objects[i].active;
+                active = !active;
             }
             ImGui::PopStyleColor(3);
             if (treeNode) {
-                ImGui::SliderFloat3("Position", glm::value_ptr(m_models[i].translation), -10.0f, 10.0f);
-                ImGui::SliderFloat3("Rotation", glm::value_ptr(m_models[i].rotation), -180.0f, 180.0f);
-                ImGui::SliderFloat("Scale", &m_models[i].scale, 0.0f, 10.0f);
+                auto &[translation, rotation, scale] = m_objects[i].model;
+                ImGui::SliderFloat3("Position", glm::value_ptr(translation), -10.0f, 10.0f);
+                ImGui::SliderFloat3("Rotation", glm::value_ptr(rotation), -180.0f, 180.0f);
+                ImGui::SliderFloat("Scale", &scale, 0.0f, 10.0f);
                 ImGui::TreePop();
             }
             ImGui::PopID();
@@ -234,24 +236,21 @@ void ModelManager::widgets() {
 
         if (removeIndex != -1) {
             m_objects.erase(m_objects.begin() + removeIndex);
-            m_activeObjects.erase(m_activeObjects.begin() + removeIndex);
         }
     }
 }
 
 void ModelManager::draw(const Shader *shader) const {
     for (auto i = 0; i < m_objects.size(); ++i) {
-        if (!m_activeObjects[i]) continue;
-        auto [model, normalMatrix] = m_models[i].compute();
+        if (!m_objects[i].active) continue;
+        auto [model, normalMatrix] = m_objects[i].model.compute();
         shader->setMat4("model", model);
         shader->setMat3("normalMatrix", normalMatrix);
-        m_objects[i].draw(shader);
+        m_objects[i].object.draw(shader);
     }
 }
 
 void ModelManager::loadObject(const std::string &path) {
     auto object = Model{normalize_path(path)};
-    m_objects.push_back(std::move(object));
-    m_activeObjects.push_back(true);
-    m_models.push_back(ModelMatrix{});
+    m_objects.push_back({std::move(object), ModelMatrix{}, true});
 }

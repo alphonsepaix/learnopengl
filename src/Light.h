@@ -160,8 +160,12 @@ public:
     void toggleFlashLight() { m_flashLightOn = !m_flashLightOn; }
 
 private:
-    std::vector<std::unique_ptr<Light> > m_lights;
-    std::vector<bool> m_activeLights;
+    struct LightInfo {
+        std::unique_ptr<Light> light;
+        bool active;
+    };
+
+    std::vector<LightInfo> m_lights;
     int m_activeLightsCount;
     SpotLight m_flashlight;
     int m_selectedLight;

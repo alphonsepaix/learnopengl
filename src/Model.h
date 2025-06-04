@@ -68,9 +68,13 @@ public:
     void draw(const Shader *shader) const;
 
 private:
-    std::vector<Model> m_objects;
-    std::vector<bool> m_activeObjects;
-    std::vector<ModelMatrix> m_models;
+    struct ObjectInfo {
+        Model object;
+        ModelMatrix model;
+        bool active;
+    };
+
+    std::vector<ObjectInfo> m_objects;
 
     void loadObject(const std::string &path);
 };

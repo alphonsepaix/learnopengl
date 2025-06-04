@@ -221,7 +221,7 @@ void LightManager::widgets() {
         int removeIndex = -1;
         for (auto i = 0; i < m_lights.size(); ++i) {
             ImGui::PushID(fmt::format("light_{}", i).c_str());
-            const auto light = m_lights[i].get();
+            const auto light = m_lights[i].light.get();
             const auto treeNode = ImGui::TreeNode(
                 fmt::format("Light #{} ({})", i, Light::getTypeStr(light->getType())).c_str());
             ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.6f, 0.6f)));
@@ -237,8 +237,9 @@ void LightManager::widgets() {
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::HSV(1 / 7.0f, 0.8f, 0.8f)));
             ImGui::SameLine();
             if (ImGui::Button("Hide")) {
-                m_activeLights[i] = !m_activeLights[i];
-                if (m_activeLights[i]) {
+                auto &active = m_lights[i].active;
+                active = !active;
+                if (active) {
                     m_activeLightsCount++;
                 } else {
                     m_activeLightsCount--;
@@ -253,7 +254,6 @@ void LightManager::widgets() {
         }
         if (removeIndex != -1) {
             m_lights.erase(m_lights.begin() + removeIndex);
-            m_activeLights.erase(m_activeLights.begin() + removeIndex);
         }
 
         if (ImGui::TreeNode("Flashlight")) {
@@ -265,8 +265,7 @@ void LightManager::widgets() {
 }
 
 void LightManager::add(std::unique_ptr<Light> light) {
-    m_lights.push_back(std::move(light));
-    m_activeLights.push_back(true);
+    m_lights.push_back({std::move(light), true});
     m_activeLightsCount++;
 }
 
@@ -276,10 +275,10 @@ void LightManager::update(const Camera *const camera) {
 }
 
 void LightManager::setShaderUniforms(const Shader *shader) const {
-    for (int i = 0; auto &light: m_lights) {
-        if (!m_activeLights[i]) continue; // skip inactive lights
+    for (int i = 0; const auto &[light, active]: m_lights) {
+        if (!active) continue; // skip inactive lights
         const auto name = fmt::format("lights[{}]", i++);
-        light.get()->setShaderUniforms(shader, name);
+        light->setShaderUniforms(shader, name);
     }
     auto size = m_activeLightsCount;
     if (m_flashLightOn) {
@@ -291,8 +290,8 @@ void LightManager::setShaderUniforms(const Shader *shader) const {
 
 void LightManager::draw(const Shader *const shader) const {
     glBindVertexArray(m_lightVao);
-    for (auto i = 0; i < m_lights.size(); ++i) {
-        if (!m_activeLights[i]) continue;
-        m_lights[i]->draw(shader);
+    for (const auto &[light, active]: m_lights) {
+        if (!active) continue;
+        light->draw(shader);
     }
 }
