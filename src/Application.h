@@ -14,7 +14,7 @@ struct AppState {
     bool wireframe = false;
     bool emission = false;
     bool cursorLocked = true;
-    bool cursorJustUnlocked = false;
+    bool cursorJustLocked = false;
     bool firstMouse = true;
     float lastX = 400.0f;
     float lastY = 300.0f;
@@ -30,20 +30,24 @@ public:
 
     bool isRunning() const;
 
-    void updateFov(float yOffset) const;
+    void updateFov(float yOffset);
 
     bool &getFirstMouse() { return m_state.firstMouse; }
     bool &getCursorLocked() { return m_state.cursorLocked; }
-    bool &getCursorJustUnlocked() { return m_state.cursorJustUnlocked; }
+    bool &getCursorJustUnlocked() { return m_state.cursorJustLocked; }
     float &getLastX() { return m_state.lastX; }
     float &getLastY() { return m_state.lastY; }
     void toggleFlashLight() { m_lightManager.toggleFlashLight(); }
+
+    void toggleCursor();
+
+    Camera *getActiveCamera() const { return m_cameraManager.getActiveCamera(); }
 
     void resize(int width, int height);
 
 private:
     Window m_window;
-    CameraManager *m_cameraManager;
+    CameraManager m_cameraManager;
     LightManager m_lightManager;
     ModelManager m_modelManager;
     AppState m_state;

@@ -101,14 +101,7 @@ public:
         Free, FPS, Lock
     };
 
-    CameraManager(const CameraManager &) = delete;
-
-    CameraManager &operator=(const CameraManager &) = delete;
-
-    static CameraManager *getInstance() {
-        static CameraManager instance;
-        return &instance;
-    };
+    CameraManager();
 
     [[nodiscard]] Camera *getActiveCamera() const {
         return m_activeCamera;
@@ -123,8 +116,6 @@ public:
     void widgets();
 
 private:
-    CameraManager();
-
     static int getCameraIndex(Type type);
 
     float m_fov;

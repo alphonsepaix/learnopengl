@@ -35,6 +35,7 @@ Window::Window(Application *const user, const int width, const int height, const
     glfwSetCursorPosCallback(m_window, mouseCallback);
     glfwSetMouseButtonCallback(m_window, mouseButtonCallback);
     glfwSetScrollCallback(m_window, scrollCallback);
+    glfwSetKeyCallback(m_window, keyCallback);
 
     setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 

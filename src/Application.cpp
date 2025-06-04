@@ -19,7 +19,7 @@ constexpr auto UP_KEY = GLFW_KEY_SPACE;
 constexpr auto DOWN_KEY = GLFW_KEY_LEFT_CONTROL;
 constexpr auto EXIT_KEY = GLFW_KEY_ESCAPE;
 
-Application::Application(): m_window{this}, m_cameraManager{CameraManager::getInstance()} {
+Application::Application(): m_window{this} {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
@@ -29,8 +29,8 @@ Application::Application(): m_window{this}, m_cameraManager{CameraManager::getIn
 
     const auto objectShader = Shader(SHADER_DIR + "object.vert", SHADER_DIR + "object.frag");
     const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
-    m_shaders["object"] = std::make_unique<Shader>(std::move(objectShader));
-    m_shaders["light"] = std::make_unique<Shader>(std::move(lightShader));
+    m_shaders["object"] = std::make_unique<Shader>(objectShader);
+    m_shaders["light"] = std::make_unique<Shader>(lightShader);
 
     m_lightManager.add(std::make_unique<DirectionalLight>(glm::vec3(-1.0f)));
     m_lightManager.add(std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));
@@ -61,9 +61,9 @@ void Application::mainLoop() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    const auto viewPos = m_cameraManager->getActiveCamera()->getPosition();
-    const auto view = m_cameraManager->getActiveCamera()->lookAt();
-    const auto projection = glm::perspective(glm::radians(m_cameraManager->getFov()),
+    const auto viewPos = m_cameraManager.getActiveCamera()->getPosition();
+    const auto view = m_cameraManager.getActiveCamera()->lookAt();
+    const auto projection = glm::perspective(glm::radians(m_cameraManager.getFov()),
                                              static_cast<float>(m_window.getWidth()) / static_cast<float>(m_window.
                                                  getHeight()), 0.1f,
                                              100.0f);
@@ -73,7 +73,7 @@ void Application::mainLoop() {
     lightShader->use();
     lightShader->setMat4("view", view);
     lightShader->setMat4("projection", projection);
-    m_lightManager.update(m_cameraManager->getActiveCamera());
+    m_lightManager.update(m_cameraManager.getActiveCamera());
     m_lightManager.draw(lightShader.get());
 
     // Draw the objects.
@@ -97,8 +97,18 @@ bool Application::isRunning() const {
     return !m_window.shouldClose();
 }
 
-void Application::updateFov(const float yOffset) const {
-    m_cameraManager->updateFov(yOffset);
+void Application::updateFov(const float yOffset) {
+    m_cameraManager.updateFov(yOffset);
+}
+
+void Application::toggleCursor() {
+    m_state.cursorLocked = !m_state.cursorLocked;
+    if (m_state.cursorLocked) {
+        glfwSetInputMode(m_window.getHandle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        m_state.cursorJustLocked = true;
+    } else {
+        glfwSetInputMode(m_window.getHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
 }
 
 void Application::resize(const int width, const int height) {
@@ -127,7 +137,7 @@ void Application::widgets() {
 
     ImGui::Begin("Settings");
     m_window.widgets();
-    m_cameraManager->widgets();
+    m_cameraManager.widgets();
     m_modelManager.widgets();
     m_lightManager.widgets();
     ImGui::End();
@@ -138,17 +148,17 @@ void Application::processInput() {
         m_window.setShouldClose(true);
     }
 
-    if (m_window.getKey(UNLOCK_KEY) == GLFW_PRESS && m_state.cursorLocked) {
-        m_window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        m_state.cursorLocked = false;
-    }
-    if (m_window.getKey(UNLOCK_KEY) == GLFW_RELEASE && !m_state.cursorLocked) {
-        m_window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        m_state.cursorLocked = m_state.cursorJustUnlocked = true;
-    }
+    //if (m_window.getKey(UNLOCK_KEY) == GLFW_PRESS && m_state.cursorLocked) {
+    //    m_window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    //    m_state.cursorLocked = false;
+    //}
+    //if (m_window.getKey(UNLOCK_KEY) == GLFW_RELEASE && !m_state.cursorLocked) {
+    //    m_window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //    m_state.cursorLocked = m_state.cursorJustUnlocked = true;
+    ///
 
     const auto &deltaTime = m_state.deltaTime;
-    const auto camera = CameraManager::getInstance()->getActiveCamera();
+    const auto camera = m_cameraManager.getActiveCamera();
     if (m_window.getKey(FORWARD_KEY) == GLFW_PRESS)
         camera->move(Camera::Direction::Forward, deltaTime);
     if (m_window.getKey(BACKWARD_KEY) == GLFW_PRESS)

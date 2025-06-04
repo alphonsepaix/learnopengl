@@ -171,6 +171,14 @@ void CameraLock::update() {
     m_lookAt = glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
+CameraManager::CameraManager(): m_fov{MAX_FOV}, m_activeCameraType{Type::Free} {
+    constexpr auto initialPos = glm::vec3(0.0f, 0.0f, 3.0f);
+    m_cameras[Type::Free] = std::make_unique<Camera>(initialPos);
+    m_cameras[Type::FPS] = std::make_unique<CameraFps>(initialPos);
+    m_cameras[Type::Lock] = std::make_unique<CameraLock>(initialPos);
+    m_activeCamera = m_cameras.at(Type::Free).get();
+}
+
 void CameraManager::setActiveCamera(const Type camera) {
     m_activeCameraType = camera;
     if (const auto it = m_cameras.find(camera); it != m_cameras.end()) {
@@ -208,14 +216,6 @@ void CameraManager::widgets() {
         getActiveCamera()->widgets(); // camera widget
         ImGui::Text("FOV: %f", m_fov);
     }
-}
-
-CameraManager::CameraManager(): m_fov{MAX_FOV}, m_activeCameraType{Type::Free} {
-    constexpr auto initialPos = glm::vec3(0.0f, 0.0f, 3.0f);
-    m_cameras[Type::Free] = std::make_unique<Camera>(initialPos);
-    m_cameras[Type::FPS] = std::make_unique<CameraFps>(initialPos);
-    m_cameras[Type::Lock] = std::make_unique<CameraLock>(initialPos);
-    m_activeCamera = m_cameras.at(Type::Free).get();
 }
 
 int CameraManager::getCameraIndex(const Type type) {
