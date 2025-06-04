@@ -141,7 +141,7 @@ private:
     float m_quadratic;
 };
 
-void attenuationWidgets(float &c, float &l, float &q);
+void attenuationWidgets(float c, float l, float q);
 
 class LightManager {
 public:

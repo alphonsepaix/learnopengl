@@ -127,9 +127,8 @@ void SpotLight::setShaderUniforms(const Shader *const shader, const std::string 
 void SpotLight::draw(const Shader *shader) {
 }
 
-void attenuationWidgets(float &c, float &l, float &q) {
-    const auto text = fmt::format("Attenuation: c: {}, l: {}, q: {}", c, l, q);
-    ImGui::Text("%s", text.c_str());
+void attenuationWidgets(const float c, const float l, const float q) {
+    ImGui::Text("Attenuation: (c, l, q) = (%.2f, %.2f, %.2f)", c, l, q);
 }
 
 LightManager::LightManager(): m_activeLightsCount{0},

@@ -95,8 +95,7 @@ void Camera::update() {
 }
 
 void Camera::baseWidgets() {
-    const auto position = fmt::format("Position: ({}, {}, {})", m_position.x, m_position.y, m_position.z);
-    ImGui::Text("%s", position.c_str());
+    ImGui::Text("Position: (%.2f, %.2f, %.2f)", m_position.x, m_position.y, m_position.z);
     ImGui::SliderFloat("Speed", &m_speed, 0.1f, 10.0f);
 }
 
@@ -184,13 +183,13 @@ void CameraManager::setActiveCamera(const Type camera) {
     if (const auto it = m_cameras.find(camera); it != m_cameras.end()) {
         const auto previous = m_activeCamera;
         m_activeCamera = it->second.get();
-        if (previous && previous != m_activeCamera) {
+        if (previous != m_activeCamera) {
             m_activeCamera->copy(previous);
         }
     }
 }
 
-void CameraManager::updateFov(float yOffset) {
+void CameraManager::updateFov(const float yOffset) {
     m_fov = std::clamp(m_fov - yOffset, MIN_FOV, MAX_FOV);
 }
 
@@ -198,35 +197,15 @@ void CameraManager::widgets() {
     if (ImGui::CollapsingHeader("Camera")) {
         constexpr std::array cameraTypes = {"Free", "FPS", "Locked"};
         int cameraIndex = getCameraIndex(m_activeCameraType);
-        ImGui::Combo("Camera", &cameraIndex, cameraTypes.data(),
-                     cameraTypes.size());
-        switch (cameraIndex) {
-            case 0:
-                setActiveCamera(Type::Free);
-                break;
-            case 1:
-                setActiveCamera(Type::FPS);
-                break;
-            case 2:
-                setActiveCamera(Type::Lock);
-                break;
-            default:
-                break;
+        if (ImGui::Combo("Camera##Combo", &cameraIndex, cameraTypes.data(),
+                         cameraTypes.size())) {
+            setActiveCamera(static_cast<Type>(cameraIndex));
         }
         getActiveCamera()->widgets(); // camera widget
-        ImGui::Text("FOV: %f", m_fov);
+        ImGui::Text("FOV: %.1f", m_fov);
     }
 }
 
 int CameraManager::getCameraIndex(const Type type) {
-    switch (type) {
-        case Type::Free:
-            return 0;
-        case Type::FPS:
-            return 1;
-        case Type::Lock:
-            return 2;
-        default:
-            std::unreachable();
-    }
+    return static_cast<int>(type);
 }

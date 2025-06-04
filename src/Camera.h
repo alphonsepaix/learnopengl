@@ -98,7 +98,7 @@ private:
 class CameraManager {
 public:
     enum class Type {
-        Free, FPS, Lock
+        Free = 0, FPS = 1, Lock = 2
     };
 
     CameraManager();
