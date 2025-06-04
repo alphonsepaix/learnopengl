@@ -120,6 +120,11 @@ void Application::widgets() {
     ImGui::Text("%s", m_state.performanceStr.c_str());
     ImGui::End();
 
+    ImGui::Begin("Options");
+    ImGui::Checkbox("Wireframe", &m_state.wireframe);
+    ImGui::Checkbox("Emission", &m_state.emission);
+    ImGui::End();
+
     ImGui::Begin("Settings");
     m_window.widgets();
     m_cameraManager->widgets();

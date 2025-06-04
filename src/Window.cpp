@@ -1,4 +1,5 @@
-#include <fmt/format.h>
+#define DBG_MACRO_NO_WARNING
+#include <dbg.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 
@@ -69,8 +70,8 @@ void Window::swapBuffers() const {
 
 void Window::widgets() {
     if (ImGui::CollapsingHeader("Window")) {
-        auto s = fmt::format("Window size: ({}, {})", m_width, m_height);
-        ImGui::Text("%s", s.c_str());
-        ImGui::ColorPicker3("##Background", glm::value_ptr(m_bgColor));
+        ImGui::Text("Title: %s", m_title.c_str());
+        ImGui::Text("Window size: (%d, %d)", m_width, m_height);
+        ImGui::ColorEdit3("Background", glm::value_ptr(m_bgColor));
     }
 }

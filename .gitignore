@@ -1,9 +1,7 @@
-libglfw3.a
-glfw3.lib
 LearnOpenGL
+cmake-build-debug/
+compile_commands.json
+.idea/
 *.exe
 *.ilk
 *.pdb
-cmake-build-debug/
-imgui.ini
-.idea/

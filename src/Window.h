@@ -3,6 +3,7 @@
 
 // ReSharper disable once CppUnusedIncludeDirective
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
 #include <string>
@@ -46,7 +47,7 @@ public:
 private:
     int m_width;
     int m_height;
-    const std::string &m_title;
+    std::string m_title;
     GLFWwindow *m_window;
     glm::vec3 m_bgColor;
 };
