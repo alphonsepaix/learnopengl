@@ -96,7 +96,7 @@ void Camera::update() {
 
 void Camera::baseWidgets() {
     const auto position = fmt::format("Position: ({}, {}, {})", m_position.x, m_position.y, m_position.z);
-    ImGui::Text(position.c_str());
+    ImGui::Text("%s", position.c_str());
     ImGui::SliderFloat("Speed", &m_speed, 0.1f, 10.0f);
 }
 

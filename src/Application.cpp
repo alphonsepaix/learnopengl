@@ -1,3 +1,4 @@
+#define DBG_MACRO_NO_WARNING
 #include <dbg.h>
 #include <fmt/format.h>
 #include <glm//gtc/matrix_transform.hpp>

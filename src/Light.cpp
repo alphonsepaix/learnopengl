@@ -8,7 +8,6 @@
 #include "Shader.h"
 
 #include <array>
-#include <iostream>
 
 Light::Light(const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular, const Type type)
     : m_ambient{ambient}, m_diffuse{diffuse}, m_specular{specular}, m_type{type} {
@@ -130,7 +129,7 @@ void SpotLight::draw(const Shader *shader) {
 
 void attenuationWidgets(float &c, float &l, float &q) {
     const auto text = fmt::format("Attenuation: c: {}, l: {}, q: {}", c, l, q);
-    ImGui::Text(text.c_str());
+    ImGui::Text("%s", text.c_str());
 }
 
 LightManager::LightManager(): m_activeLightsCount{0},
@@ -221,7 +220,7 @@ void LightManager::widgets() {
         ImGui::SeparatorText("Lights");
         int removeIndex = -1;
         for (auto i = 0; i < m_lights.size(); ++i) {
-            ImGui::PushID(i);
+            ImGui::PushID(fmt::format("light_{}", i).c_str());
             const auto light = m_lights[i].get();
             const auto treeNode = ImGui::TreeNode(
                 fmt::format("Light #{} ({})", i, Light::getTypeStr(light->getType())).c_str());

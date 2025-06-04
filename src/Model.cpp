@@ -164,7 +164,7 @@ std::vector<Texture> Model::loadMaterialTextures(const aiMaterial *const mat, co
     for (auto i = 0; i < mat->GetTextureCount(type); ++i) {
         aiString str;
         mat->GetTexture(type, i, &str);
-        auto path = fmt::format("{}\\{}", m_directory, str.C_Str());
+        auto path = fmt::format("{}/{}", m_directory, str.C_Str());
         if (const auto it = loadedTextures.find(path); it != loadedTextures.end()) {
             textures.push_back(*it->second);
         } else {
@@ -190,7 +190,7 @@ std::pair<glm::mat4, glm::mat3> ModelMatrix::compute() const {
 }
 
 ModelManager::ModelManager() {
-    loadObject(MODEL_DIR + "cube/cube.obj");
+    loadObject(MODEL_DIR + "cube/cube.obj"); // default cube
 }
 
 void ModelManager::widgets() {
@@ -205,7 +205,7 @@ void ModelManager::widgets() {
         int removeIndex = -1;
 
         for (auto i = 0; i < m_objects.size(); ++i) {
-            ImGui::PushID(i);
+            ImGui::PushID(fmt::format("model_{}", i).c_str());
             const auto treeNode = ImGui::TreeNode(fmt::format("Object #{}", i).c_str());
             ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.6f, 0.6f)));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::HSV(0 / 7.0f, 0.7f, 0.7f)));
@@ -250,7 +250,7 @@ void ModelManager::draw(const Shader *shader) const {
 }
 
 void ModelManager::loadObject(const std::string &path) {
-    dbg("Loading object '{}'...", path);
+    std::cout << "Loading object '" << path << "'..." << std::endl;
     auto object = Model{path};
     m_objects.push_back(std::move(object));
     m_activeObjects.push_back(true);

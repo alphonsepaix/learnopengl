@@ -1,6 +1,9 @@
+#define DBG_MACRO_NO_WARNING
+#include <dbg.h>
 #include "utils.h"
 
 #include <algorithm>
+#include <random>
 
 std::string fileDialog(const nfdu8filteritem_t *filters, const nfdfiltersize_t count) {
     NFD_Init();
@@ -20,4 +23,10 @@ std::string fileDialog(const nfdu8filteritem_t *filters, const nfdfiltersize_t c
     }
     NFD_Quit();
     return filename;
+}
+
+int randomInt() {
+    static std::mt19937 gen{std::random_device{}()};
+    static std::uniform_int_distribution<int> distribution;
+    return distribution(gen);
 }

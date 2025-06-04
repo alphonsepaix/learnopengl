@@ -1,3 +1,4 @@
+#define DBG_MACRO_NO_WARNING
 #include <dbg.h>
 #include <glm/gtc/type_ptr.hpp>
 
