@@ -238,8 +238,8 @@ void ModelManager::widgets() {
     if (ImGui::CollapsingHeader("Objects")) {
         if (ImGui::Button("Add a new object")) {
             constexpr nfdu8filteritem_t filters[1] = {{"Object", "obj"}};
-            const auto path = fileDialog(filters, 1);
-            loadObject(path);
+            if (const auto path = fileDialog(filters, 1))
+                loadObject(*path);
         }
 
         ImGui::SeparatorText("Objets");

@@ -4,9 +4,10 @@
 #include <nfd.h>
 
 #include <filesystem>
+#include <optional>
 #include <string>
 
-std::string fileDialog(const nfdu8filteritem_t *filters, const nfdfiltersize_t count);
+auto fileDialog(const nfdu8filteritem_t *filters, const nfdfiltersize_t count) -> std::optional<std::string>;
 
 int randomInt();
 

@@ -6,7 +6,7 @@
 #include <random>
 #include <filesystem>
 
-std::string fileDialog(const nfdu8filteritem_t *filters, const nfdfiltersize_t count) {
+auto fileDialog(const nfdu8filteritem_t *filters, const nfdfiltersize_t count) -> std::optional<std::string> {
     NFD_Init();
     nfdu8char_t *outPath;
     nfdopendialogu8args_t args = {nullptr};
@@ -19,9 +19,10 @@ std::string fileDialog(const nfdu8filteritem_t *filters, const nfdfiltersize_t c
         filename = normalize_path(filename);
         NFD_FreePathU8(outPath);
     } else if (result == NFD_CANCEL) {
-        // no-op
+        return {};
     } else {
         printf("Error: %s\n", NFD_GetError());
+        return {};
     }
     NFD_Quit();
     return filename;
