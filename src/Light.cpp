@@ -182,9 +182,8 @@ LightManager::LightManager(): m_activeLightsCount{0},
 
     glGenVertexArrays(1, &m_lightVao);
     glBindVertexArray(m_lightVao);
-    GLuint lightVbo;
-    glGenBuffers(1, &lightVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, lightVbo);
+    glGenBuffers(1, &m_lightVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_lightVbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
                  vertices.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
@@ -192,6 +191,11 @@ LightManager::LightManager(): m_activeLightsCount{0},
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+LightManager::~LightManager() {
+    glDeleteBuffers(1, &m_lightVbo);
+    glDeleteVertexArrays(1, &m_lightVao);
 }
 
 void LightManager::widgets() {

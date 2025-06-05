@@ -33,10 +33,10 @@ Application::Application(): m_window{this} {
     m_shaders["object"] = std::make_unique<Shader>(objectShader);
     m_shaders["light"] = std::make_unique<Shader>(lightShader);
 
-    auto texture = Texture{TEXTURE_DIR + "emission.jpg", Texture::Type::Diffuse};
-    texture.setUnit(2);
+    static const auto texture = Texture{TEXTURE_DIR + "emission.jpg", Texture::Type::Diffuse};
+    texture.setUnit(3);
     objectShader.use();
-    objectShader.setInt("material.emission", 2);
+    objectShader.setInt("material.emission", 3);
 
     m_lightManager.add(std::make_unique<DirectionalLight>(glm::vec3(-1.0f)));
     m_lightManager.add(std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));
@@ -153,15 +153,6 @@ void Application::processInput() {
     if (m_window.getKey(EXIT_KEY) == GLFW_PRESS) {
         m_window.setShouldClose(true);
     }
-
-    //if (m_window.getKey(UNLOCK_KEY) == GLFW_PRESS && m_state.cursorLocked) {
-    //    m_window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    //    m_state.cursorLocked = false;
-    //}
-    //if (m_window.getKey(UNLOCK_KEY) == GLFW_RELEASE && !m_state.cursorLocked) {
-    //    m_window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    //    m_state.cursorLocked = m_state.cursorJustUnlocked = true;
-    ///
 
     const auto &deltaTime = m_state.deltaTime;
     const auto camera = m_cameraManager.getActiveCamera();

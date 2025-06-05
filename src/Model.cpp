@@ -12,13 +12,51 @@
 #include <imgui.h>
 #include <unordered_map>
 
-std::unordered_map<std::string, std::unique_ptr<Texture> > loadedTextures;
+std::unordered_map<std::string, std::weak_ptr<Texture> > loadedTextures;
 
 const std::string MODEL_DIR = "assets/models/";
 
 Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices,
-           const std::vector<Texture> &textures): m_vertices{vertices}, m_indices{indices}, m_textures{textures} {
+           const std::vector<std::shared_ptr<Texture> > &textures): m_vertices{vertices}, m_indices{indices},
+                                                                    m_textures{textures} {
     setupMesh();
+}
+
+Mesh::~Mesh() {
+    if (m_vao != 0)
+        glDeleteVertexArrays(1, &m_vao);
+    if (m_vbo != 0)
+        glDeleteBuffers(1, &m_vbo);
+    if (m_ebo != 0)
+        glDeleteBuffers(1, &m_ebo);
+}
+
+Mesh::Mesh(Mesh &&other) noexcept {
+    m_vao = other.m_vao;
+    m_vbo = other.m_vbo;
+    m_ebo = other.m_ebo;
+    m_vertices = std::move(other.m_vertices);
+    m_indices = std::move(other.m_indices);
+    m_textures = std::move(other.m_textures);
+    other.m_vao = 0;
+    other.m_vbo = 0;
+    other.m_ebo = 0;
+}
+
+Mesh &Mesh::operator=(Mesh &&other) noexcept {
+    if (this != &other) {
+        m_vao = other.m_vao;
+        m_vbo = other.m_vbo;
+        m_ebo = other.m_ebo;
+        m_vertices = std::move(other.m_vertices);
+        m_indices = std::move(other.m_indices);
+        m_textures = std::move(other.m_textures);
+
+        other.m_vao = 0;
+        other.m_vbo = 0;
+        other.m_ebo = 0;
+    }
+    return *this;
 }
 
 void Mesh::draw(const Shader *shader) const {
@@ -27,10 +65,10 @@ void Mesh::draw(const Shader *shader) const {
 
     for (auto i = 0; i < m_textures.size(); ++i) {
         auto &texture = m_textures[i];
-        texture.setUnit(i);
+        texture->setUnit(i);
         std::string name;
         int number;
-        switch (texture.getType()) {
+        switch (texture->getType()) {
             case Texture::Type::Diffuse:
                 name = "diffuse";
                 number = diffuseNr++;
@@ -42,9 +80,8 @@ void Mesh::draw(const Shader *shader) const {
         }
         name = fmt::format("material.texture_{}{}", name, number);
         shader->setInt(name, i);
-        texture.bind();
+        texture->bind();
     }
-    glActiveTexture(GL_TEXTURE0);
 
     glBindVertexArray(m_vao);
     glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, nullptr);
@@ -108,10 +145,10 @@ void Model::processNode(const aiNode *node, const aiScene *scene) {
     }
 }
 
-Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
+Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) const {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
-    std::vector<Texture> textures;
+    std::vector<std::shared_ptr<Texture> > textures;
 
     // Process vertices.
     for (auto i = 0; i < mesh->mNumVertices; ++i) {
@@ -151,29 +188,32 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 
     // Process material.
     auto material = scene->mMaterials[mesh->mMaterialIndex];
-    std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
+    auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-    std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
+    auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
     return Mesh{vertices, indices, textures};
 }
 
-std::vector<Texture> Model::loadMaterialTextures(const aiMaterial *const mat, const aiTextureType type) {
-    std::vector<Texture> textures;
+std::vector<std::shared_ptr<Texture> > Model::loadMaterialTextures(const aiMaterial *const mat,
+                                                                   const aiTextureType type) const {
+    std::vector<std::shared_ptr<Texture> > textures;
     for (auto i = 0; i < mat->GetTextureCount(type); ++i) {
         aiString str;
         mat->GetTexture(type, i, &str);
         auto path = join_paths(m_directory, str.C_Str());
         if (const auto it = loadedTextures.find(path); it != loadedTextures.end()) {
-            textures.push_back(*it->second);
-        } else {
-            auto texture = std::make_unique<Texture>(
-                path, type == aiTextureType_DIFFUSE ? Texture::Type::Diffuse : Texture::Type::Specular
-            );
-            textures.push_back(*texture);
-            loadedTextures[path] = std::move(texture);
+            if (auto texture = it->second.lock()) {
+                textures.push_back(std::move(texture));
+                continue;
+            }
         }
+        auto texture = std::make_shared<Texture>(
+            path, type == aiTextureType_DIFFUSE ? Texture::Type::Diffuse : Texture::Type::Specular
+        );
+        loadedTextures[path] = std::weak_ptr{texture};
+        textures.push_back(std::move(texture));
     }
     return textures;
 }
@@ -197,7 +237,7 @@ void ModelManager::widgets() {
     if (ImGui::CollapsingHeader("Objects")) {
         if (ImGui::Button("Add a new object")) {
             constexpr nfdu8filteritem_t filters[1] = {{"Object", "obj"}};
-            auto path = fileDialog(filters, 1);
+            const auto path = fileDialog(filters, 1);
             loadObject(path);
         }
 
@@ -241,16 +281,27 @@ void ModelManager::widgets() {
 }
 
 void ModelManager::draw(const Shader *shader) const {
-    for (auto i = 0; i < m_objects.size(); ++i) {
-        if (!m_objects[i].active) continue;
-        auto [model, normalMatrix] = m_objects[i].model.compute();
-        shader->setMat4("model", model);
+    for (const auto &[object, model, active]: m_objects) {
+        if (!active) continue;
+        auto [modelMatrix, normalMatrix] = model.compute();
+        shader->setMat4("model", modelMatrix);
         shader->setMat3("normalMatrix", normalMatrix);
-        m_objects[i].object.draw(shader);
+        object->draw(shader);
     }
 }
 
 void ModelManager::loadObject(const std::string &path) {
-    auto object = Model{normalize_path(path)};
+    if (const auto it = m_loadedModels.find(path); it != m_loadedModels.end()) {
+        if (auto object = it->second.lock()) {
+            std::cout << "Loading model '" << path << "' from cache...\n";
+            m_objects.push_back({std::move(object), ModelMatrix{}, true});
+            return;
+        }
+        std::cout << "Model was previously unloaded, reloading from disk...\n";
+    }
+    // The model was unloaded or not found in the cache, so we load it from disk.
+    std::cout << "Loading model '" << path << "'...\n";
+    auto object = std::make_shared<Model>(path);
+    m_loadedModels[path] = std::weak_ptr{object};
     m_objects.push_back({std::move(object), ModelMatrix{}, true});
 }

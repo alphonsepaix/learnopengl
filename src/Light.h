@@ -147,6 +147,8 @@ class LightManager {
 public:
     LightManager();
 
+    ~LightManager();
+
     void widgets();
 
     void add(std::unique_ptr<Light> light);
@@ -169,7 +171,7 @@ private:
     int m_activeLightsCount;
     SpotLight m_flashlight;
     int m_selectedLight;
-    GLuint m_lightVao;
+    GLuint m_lightVao{}, m_lightVbo{};
     bool m_flashLightOn;
 };
 

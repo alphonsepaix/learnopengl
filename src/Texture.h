@@ -29,6 +29,16 @@ public:
 
     explicit Texture(const std::string &texturePath, Type type = Type::Diffuse);
 
+    ~Texture();
+
+    Texture(const Texture &) = delete;
+
+    Texture &operator=(const Texture &) = delete;
+
+    Texture(Texture &&other) noexcept;
+
+    Texture &operator=(Texture &&other) noexcept;
+
     void bind() const;
 
     void setUnit(int unit) const;

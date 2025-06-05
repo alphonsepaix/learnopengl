@@ -8,6 +8,7 @@
 #include "Shader.h"
 #include "Texture.h"
 
+#include <unordered_map>
 #include <vector>
 
 struct Vertex {
@@ -19,15 +20,26 @@ struct Vertex {
 class Mesh {
 public:
     Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices,
-         const std::vector<Texture> &textures);
+         const std::vector<std::shared_ptr<Texture> > &textures);
+
+    ~Mesh();
+
+    // better raii
+    Mesh(const Mesh &) = delete;
+
+    Mesh &operator=(const Mesh &) = delete;
+
+    Mesh(Mesh &&other) noexcept;
+
+    Mesh &operator=(Mesh &&other) noexcept;
 
     void draw(const Shader *shader) const;
 
 private:
-    GLuint m_vao, m_vbo, m_ebo;
+    GLuint m_vao{}, m_vbo{}, m_ebo{};
     std::vector<Vertex> m_vertices;
     std::vector<unsigned int> m_indices;
-    std::vector<Texture> m_textures;
+    std::vector<std::shared_ptr<Texture> > m_textures;
 
     void setupMesh();
 };
@@ -46,9 +58,9 @@ private:
 
     void processNode(const aiNode *node, const aiScene *scene);
 
-    Mesh processMesh(aiMesh *mesh, const aiScene *scene);
+    Mesh processMesh(aiMesh *mesh, const aiScene *scene) const;
 
-    std::vector<Texture> loadMaterialTextures(const aiMaterial *mat, aiTextureType type);
+    std::vector<std::shared_ptr<Texture> > loadMaterialTextures(const aiMaterial *mat, aiTextureType type) const;
 };
 
 struct ModelMatrix {
@@ -69,12 +81,13 @@ public:
 
 private:
     struct ObjectInfo {
-        Model object;
+        std::shared_ptr<Model> object;
         ModelMatrix model;
         bool active;
     };
 
     std::vector<ObjectInfo> m_objects;
+    std::unordered_map<std::string, std::weak_ptr<Model> > m_loadedModels;
 
     void loadObject(const std::string &path);
 };

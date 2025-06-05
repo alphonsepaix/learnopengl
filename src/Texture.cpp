@@ -31,6 +31,29 @@ Texture::Texture(const std::string &texturePath, const Type type): m_textureId{0
     setWrap(Wrap::Repeat, Wrap::Repeat);
 }
 
+Texture::~Texture() {
+    if (m_textureId != 0)
+        glDeleteTextures(1, &m_textureId);
+}
+
+Texture::Texture(Texture &&other) noexcept {
+    m_textureId = other.m_textureId;
+    m_type = other.m_type;
+    other.m_textureId = 0; // prevent the destructor from deleting the texture when other goes out of scope
+}
+
+Texture &Texture::operator=(Texture &&other) noexcept {
+    if (this != &other) {
+        if (m_textureId != 0) {
+            glDeleteTextures(1, &m_textureId);
+        }
+        m_textureId = other.m_textureId;
+        m_type = other.m_type;
+        other.m_textureId = 0;
+    }
+    return *this;
+}
+
 void Texture::bind() const {
     glBindTexture(GL_TEXTURE_2D, m_textureId);
 }
