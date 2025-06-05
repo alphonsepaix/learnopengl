@@ -39,7 +39,7 @@ Light::Type Light::getType() const {
     return m_type;
 }
 
-void Light::setBaseUniforms(const Shader *const shader, const std::string &name) const {
+void Light::setBaseUniforms(Shader *const shader, const std::string &name) const {
     shader->setVec3(name + ".ambient", m_ambient);
     shader->setVec3(name + ".diffuse", m_diffuse);
     shader->setVec3(name + ".specular", m_specular);
@@ -56,13 +56,13 @@ void DirectionalLight::widgets() {
     ImGui::SliderFloat3("Direction", glm::value_ptr(m_direction), -1.0f, 1.0f);
 }
 
-void DirectionalLight::setShaderUniforms(const Shader *const shader, const std::string &name) const {
+void DirectionalLight::setShaderUniforms(Shader *const shader, const std::string &name) const {
     setBaseUniforms(shader, name);
 
     shader->setVec3(name + ".direction", m_direction);
 }
 
-void DirectionalLight::draw(const Shader *shader) {
+void DirectionalLight::draw(Shader *const shader) {
     // no-op
 }
 
@@ -78,7 +78,7 @@ void PointLight::widgets() {
     attenuationWidgets(m_constant, m_linear, m_quadratic);
 }
 
-void PointLight::setShaderUniforms(const Shader *const shader, const std::string &name) const {
+void PointLight::setShaderUniforms(Shader *const shader, const std::string &name) const {
     setBaseUniforms(shader, name);
     shader->setVec3(name + ".position", m_position);
 
@@ -87,7 +87,7 @@ void PointLight::setShaderUniforms(const Shader *const shader, const std::string
     shader->setFloat(name + ".quadratic", m_quadratic);
 }
 
-void PointLight::draw(const Shader *shader) {
+void PointLight::draw(Shader *const shader) {
     auto model = glm::translate(glm::mat4(1.0f), m_position);
     model = glm::scale(model, glm::vec3(0.2f));
     shader->setMat4("model", model);
@@ -110,7 +110,7 @@ void SpotLight::widgets() {
     attenuationWidgets(m_constant, m_linear, m_quadratic);
 }
 
-void SpotLight::setShaderUniforms(const Shader *const shader, const std::string &name) const {
+void SpotLight::setShaderUniforms(Shader *const shader, const std::string &name) const {
     setBaseUniforms(shader, name);
 
     shader->setVec3(name + ".position", m_position);
@@ -124,7 +124,7 @@ void SpotLight::setShaderUniforms(const Shader *const shader, const std::string 
     shader->setFloat(name + ".quadratic", m_quadratic);
 }
 
-void SpotLight::draw(const Shader *shader) {
+void SpotLight::draw(Shader *const shader) {
 }
 
 void attenuationWidgets(const float c, const float l, const float q) {
@@ -277,7 +277,7 @@ void LightManager::update(const Camera *const camera) {
     m_flashlight.setPosition(camera->getPosition());
 }
 
-void LightManager::setShaderUniforms(const Shader *shader) const {
+void LightManager::setShaderUniforms(Shader *const shader) const {
     for (int i = 0; const auto &[light, active]: m_lights) {
         if (!active) continue; // skip inactive lights
         const auto name = fmt::format("lights[{}]", i++);
@@ -291,7 +291,7 @@ void LightManager::setShaderUniforms(const Shader *shader) const {
     shader->setInt("lightCount", size);
 }
 
-void LightManager::draw(const Shader *const shader) const {
+void LightManager::draw(Shader *const shader) const {
     glBindVertexArray(m_lightVao);
     for (const auto &[light, active]: m_lights) {
         if (!active) continue;

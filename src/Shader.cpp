@@ -1,5 +1,6 @@
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
+#include <fmt/format.h>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Light.h"
@@ -8,16 +9,11 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath): m_programId{0} {
-    std::string vertexSource, fragmentSource;
-    try {
-        vertexSource = read_content(vertexPath);
-        fragmentSource = read_content(fragmentPath);
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << '\n';
-        return;
-    }
+    const std::string vertexSource = readFile(vertexPath);
+    const std::string fragmentSource = readFile(fragmentPath);
 
     m_programId = glCreateProgram();
 
@@ -37,8 +33,8 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath): 
     if (!success) {
         char message[512];
         glGetProgramInfoLog(m_programId, 512, nullptr, message);
-        std::cerr << "Could not link shader program:\n" << message << '\n';
-        m_programId = 0;
+        auto str = fmt::format("Could not link shader program:\n{}", message);
+        throw std::runtime_error(str);
     }
 }
 
@@ -46,32 +42,39 @@ void Shader::use() const {
     glUseProgram(m_programId);
 }
 
-void Shader::setBool(const std::string &name, const bool value) const {
-    glUniform1i(glGetUniformLocation(m_programId, name.c_str()), value);
+void Shader::setBool(const std::string &name, const bool value) {
+    const auto loc = getUniformLocation(name);
+    glUniform1i(loc, value);
 }
 
-void Shader::setInt(const std::string &name, const int value) const {
-    glUniform1i(glGetUniformLocation(m_programId, name.c_str()), value);
+void Shader::setInt(const std::string &name, const int value) {
+    const auto loc = getUniformLocation(name);
+    glUniform1i(loc, value);
 }
 
-void Shader::setFloat(const std::string &name, const float value) const {
-    glUniform1f(glGetUniformLocation(m_programId, name.c_str()), value);
+void Shader::setFloat(const std::string &name, const float value) {
+    const auto loc = getUniformLocation(name);
+    glUniform1f(loc, value);
 }
 
-void Shader::setVec3(const std::string &name, const glm::vec3 &value) const {
-    glUniform3fv(glGetUniformLocation(m_programId, name.c_str()), 1, glm::value_ptr(value));
+void Shader::setVec3(const std::string &name, const glm::vec3 &value) {
+    const auto loc = getUniformLocation(name);
+    glUniform3fv(loc, 1, glm::value_ptr(value));
 }
 
-void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
-    glUniform4fv(glGetUniformLocation(m_programId, name.c_str()), 1, glm::value_ptr(value));
+void Shader::setVec4(const std::string &name, const glm::vec4 &value) {
+    const auto loc = getUniformLocation(name);
+    glUniform4fv(loc, 1, glm::value_ptr(value));
 }
 
-void Shader::setMat3(const std::string &name, const glm::mat3 &value) const {
-    glUniformMatrix3fv(glGetUniformLocation(m_programId, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+void Shader::setMat3(const std::string &name, const glm::mat3 &value) {
+    const auto loc = getUniformLocation(name);
+    glUniformMatrix3fv(loc, 1, GL_FALSE, glm::value_ptr(value));
 }
 
-void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
-    glUniformMatrix4fv(glGetUniformLocation(m_programId, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+void Shader::setMat4(const std::string &name, const glm::mat4 &value) {
+    const auto loc = getUniformLocation(name);
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(value));
 }
 
 GLuint Shader::compile(const std::string &source, const GLuint type) {
@@ -86,27 +89,36 @@ GLuint Shader::compile(const std::string &source, const GLuint type) {
         char message[512];
         glGetShaderInfoLog(shader, 512, nullptr, message);
         const auto typeStr = shaderTypeStr(type);
-        std::cerr << "Could not compile " << typeStr << " shader:\n" << message << '\n';
-        glDeleteShader(shader);
-        return 0;
+        const auto str = fmt::format("Could not compile {} shader:\n{}", shaderTypeStr(type), message);
+        throw std::runtime_error(str);
     }
 
     return shader;
 }
 
-std::string read_content(const std::string &path) {
+GLuint Shader::getUniformLocation(const std::string &name) {
+    if (const auto it = m_uniformLocationCache.find(name); it != m_uniformLocationCache.end()) {
+        return it->second;
+    } else {
+        const auto loc = glGetUniformLocation(m_programId, name.c_str());
+        if (loc == -1) {
+            const auto str = fmt::format("Uniform '{}' not found in shader program", name);
+            throw std::runtime_error(str);
+        }
+        m_uniformLocationCache[name] = loc;
+        return loc;
+    }
+}
+
+std::string readFile(const std::string &path) {
     std::ifstream file;
     file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    try {
-        file.open(path);
-        std::stringstream stream;
-        stream << file.rdbuf();
-        file.close();
-        return stream.str();
-    } catch (std::ifstream::failure &e) {
-        std::cerr << "Could not read file '" << path << "': " << e.what() << '\n';
-        return "";
-    }
+    // Might throw an exception if the file cannot be opened.
+    file.open(path);
+    std::stringstream stream;
+    stream << file.rdbuf();
+    file.close();
+    return stream.str();
 }
 
 std::string shaderTypeStr(const GLuint type) {

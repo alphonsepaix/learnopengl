@@ -15,6 +15,7 @@
 std::unordered_map<std::string, std::weak_ptr<Texture> > loadedTextures;
 
 const std::string MODEL_DIR = "assets/models/";
+const std::string TEXTURE_DIR = "assets/textures/";
 
 Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices,
            const std::vector<std::shared_ptr<Texture> > &textures): m_vertices{vertices}, m_indices{indices},
@@ -59,7 +60,7 @@ Mesh &Mesh::operator=(Mesh &&other) noexcept {
     return *this;
 }
 
-void Mesh::draw(const Shader *shader) const {
+void Mesh::draw(Shader *const shader) const {
     auto diffuseNr = 1;
     auto specularNr = 1;
 
@@ -116,7 +117,7 @@ Model::Model(const std::string &path) {
     loadModel(path);
 }
 
-void Model::draw(const Shader *shader) const {
+void Model::draw(Shader *const shader) const {
     for (const auto &mesh: m_meshes)
         mesh.draw(shader);
 }
@@ -126,8 +127,8 @@ void Model::loadModel(const std::string &path) {
     const auto scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        std::cerr << "Assimp: error when loading model: " << importer.GetErrorString() << std::endl;
-        return;
+        auto str = fmt::format("Assimp: error when loading model: {}", importer.GetErrorString());
+        throw std::runtime_error(str);
     }
 
     m_directory = get_directory(path);
@@ -229,7 +230,7 @@ std::pair<glm::mat4, glm::mat3> ModelMatrix::compute() const {
     return {model, normalMatrix};
 }
 
-ModelManager::ModelManager() {
+ModelManager::ModelManager(): m_emission{TEXTURE_DIR + "emission.jpg", Texture::Type::Diffuse} {
     loadObject(MODEL_DIR + "cube/cube.obj"); // default cube
 }
 
@@ -280,7 +281,9 @@ void ModelManager::widgets() {
     }
 }
 
-void ModelManager::draw(const Shader *shader) const {
+void ModelManager::draw(Shader *const shader) const {
+    m_emission.setUnit(2);
+    shader->setInt("material.emission", 2);
     for (const auto &[object, model, active]: m_objects) {
         if (!active) continue;
         auto [modelMatrix, normalMatrix] = model.compute();

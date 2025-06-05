@@ -31,18 +31,18 @@ public:
 
     virtual ~Light() = default;
 
-    virtual void setShaderUniforms(const Shader *shader, const std::string &name) const = 0;
+    virtual void setShaderUniforms(Shader *shader, const std::string &name) const = 0;
 
     virtual void widgets();
 
-    virtual void draw(const Shader *shader) = 0;
+    virtual void draw(Shader *shader) = 0;
 
     Type getType() const;
 
 protected:
     Light(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, Type type);
 
-    void setBaseUniforms(const Shader *const shader, const std::string &name) const;
+    void setBaseUniforms(Shader *shader, const std::string &name) const;
 
     glm::vec3 m_ambient;
     glm::vec3 m_diffuse;
@@ -60,11 +60,11 @@ public:
 
     void widgets() override;
 
-    void setShaderUniforms(const Shader *const shader, const std::string &name) const override;
+    void setShaderUniforms(Shader *shader, const std::string &name) const override;
 
     [[nodiscard]] const glm::vec3 &getDirection() const { return m_direction; }
 
-    void draw(const Shader *shader) override;
+    void draw(Shader *shader) override;
 
 private:
     glm::vec3 m_direction;
@@ -78,7 +78,7 @@ public:
 
     void widgets() override;
 
-    void setShaderUniforms(const Shader *const shader, const std::string &name) const override;
+    void setShaderUniforms(Shader *shader, const std::string &name) const override;
 
     [[nodiscard]] const glm::vec3 &getPosition() const { return m_position; };
 
@@ -88,7 +88,7 @@ public:
 
     [[nodiscard]] float getQuadratic() const { return m_quadratic; }
 
-    void draw(const Shader *shader) override;
+    void draw(Shader *shader) override;
 
 private:
     glm::vec3 m_position;
@@ -107,7 +107,7 @@ public:
 
     void widgets() override;
 
-    void setShaderUniforms(const Shader *const shader, const std::string &name) const override;
+    void setShaderUniforms(Shader *shader, const std::string &name) const override;
 
     [[nodiscard]] const glm::vec3 &getPosition() const { return m_position; }
 
@@ -127,7 +127,7 @@ public:
 
     [[nodiscard]] float getQuadratic() const { return m_quadratic; }
 
-    void draw(const Shader *shader) override;
+    void draw(Shader *shader) override;
 
 private:
     glm::vec3 m_position;
@@ -155,9 +155,9 @@ public:
 
     void update(const Camera *camera);
 
-    void setShaderUniforms(const Shader *shader) const;
+    void setShaderUniforms(Shader *shader) const;
 
-    void draw(const Shader *shader) const;
+    void draw(Shader *shader) const;
 
     void toggleFlashLight() { m_flashLightOn = !m_flashLightOn; }
 

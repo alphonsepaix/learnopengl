@@ -33,7 +33,7 @@ public:
 
     Mesh &operator=(Mesh &&other) noexcept;
 
-    void draw(const Shader *shader) const;
+    void draw(Shader *shader) const;
 
 private:
     GLuint m_vao{}, m_vbo{}, m_ebo{};
@@ -48,7 +48,7 @@ class Model {
 public:
     explicit Model(const std::string &path);
 
-    void draw(const Shader *shader) const;
+    void draw(Shader *shader) const;
 
 private:
     std::vector<Mesh> m_meshes;
@@ -77,7 +77,7 @@ public:
 
     void widgets();
 
-    void draw(const Shader *shader) const;
+    void draw(Shader *shader) const;
 
 private:
     struct ObjectInfo {
@@ -88,6 +88,7 @@ private:
 
     std::vector<ObjectInfo> m_objects;
     std::unordered_map<std::string, std::weak_ptr<Model> > m_loadedModels;
+    Texture m_emission;
 
     void loadObject(const std::string &path);
 };

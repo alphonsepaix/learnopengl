@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <stb_image.h>
 
 #include "Texture.h"
@@ -25,7 +26,8 @@ Texture::Texture(const std::string &texturePath, const Type type): m_textureId{0
         glGenerateMipmap(GL_TEXTURE_2D);
         stbi_image_free(data);
     } else {
-        std::cerr << "Failed to load texture '" << texturePath << "'\n";
+        const auto str = fmt::format("Failed to load texture '{}'", texturePath);
+        throw std::runtime_error(str);
     }
     setFilter(Filter::LinearMipmapLinear, Filter::Linear);
     setWrap(Wrap::Repeat, Wrap::Repeat);

@@ -9,7 +9,6 @@
 #include "Application.h"
 
 const std::string SHADER_DIR = "assets/shaders/";
-const std::string TEXTURE_DIR = "assets/textures/";
 
 constexpr auto UNLOCK_KEY = GLFW_KEY_LEFT_SHIFT;
 constexpr auto FORWARD_KEY = GLFW_KEY_W;
@@ -32,11 +31,6 @@ Application::Application(): m_window{this} {
     const auto lightShader = Shader(SHADER_DIR + "light.vert", SHADER_DIR + "light.frag");
     m_shaders["object"] = std::make_unique<Shader>(objectShader);
     m_shaders["light"] = std::make_unique<Shader>(lightShader);
-
-    static const auto texture = Texture{TEXTURE_DIR + "emission.jpg", Texture::Type::Diffuse};
-    texture.setUnit(3);
-    objectShader.use();
-    objectShader.setInt("material.emission", 3);
 
     m_lightManager.add(std::make_unique<DirectionalLight>(glm::vec3(-1.0f)));
     m_lightManager.add(std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));

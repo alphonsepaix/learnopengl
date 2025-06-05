@@ -19,13 +19,13 @@ Window::Window(Application *const user, const int width, const int height, const
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     m_window = glfwCreateWindow(m_width, m_height, title.c_str(), nullptr, nullptr);
     if (m_window == nullptr) {
-        std::cerr << "Failed to create GLFW window\n";
         glfwTerminate();
+        throw std::runtime_error("Failed to create GLFW window");
     }
     glfwMakeContextCurrent(m_window);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::cerr << "Failed to initialize GLAD\n";
+        throw std::runtime_error("Failed to initialize GLAD");
     }
 
     glfwSwapInterval(1);
