@@ -80,13 +80,13 @@ public:
     void draw(Shader *shader) const;
 
 private:
-    struct ObjectInfo {
+    struct ObjectData {
         std::shared_ptr<Model> object;
         ModelMatrix model;
         bool active;
     };
 
-    std::vector<ObjectInfo> m_objects;
+    std::vector<ObjectData> m_objects;
     std::unordered_map<std::string, std::weak_ptr<Model> > m_loadedModels;
     Texture m_emission;
 
