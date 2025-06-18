@@ -37,42 +37,60 @@ uniform bool emission;
 uniform vec3 viewPos;
 uniform Light lights[30];
 uniform int lightCount;
+uniform bool showDepth;
+
+float LinearizeDepth(float depth);
+float near = 0.1f;
+float far = 100.0f;
 
 vec3 calcDirLight(Light light, vec3 normal, vec3 viewDir);
 vec3 calcPointLight(Light light, vec3 normal, vec3 viewDir);
 vec3 calcSpotLight(Light light, vec3 normal, vec3 viewDir);
 
 void main() {
-    vec3 norm = normalize(Normal);
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 result = vec3(0.0f);
-    for (int i = 0; i < lightCount; i++)
+    if (showDepth)
     {
-        if (lights[i].type == 0) {
-            result += calcDirLight(lights[i], norm, viewDir);
-        }
-        else if (lights[i].type == 1) {
-            result += calcPointLight(lights[i], norm, viewDir);
-        }
-        else if (lights[i].type == 2) {
-            result += calcSpotLight(lights[i], norm, viewDir);
-        } else {
-            // Unsupported light type, skip
-            continue;
-        }
-    }
 
-    if (emission)
-    {
-        float borderWidth = 0.1f;
-        float mask = step(borderWidth, TexCoords.x)
-        * step(TexCoords.x, 1.0f - borderWidth)
-        * step(borderWidth, TexCoords.y)
-        * step(TexCoords.y, 1.0f - borderWidth);
-        result += texture(material.emission, TexCoords).rgb * mask;
-    }
+        float depth = LinearizeDepth(gl_FragCoord.z) / far;
+        FragColor = vec4(vec3(depth), 1.0f);
+    } else {
+        vec3 norm = normalize(Normal);
+        vec3 viewDir = normalize(viewPos - FragPos);
+        vec3 result = vec3(0.0f);
+        for (int i = 0; i < lightCount; i++)
+        {
+            if (lights[i].type == 0) {
+                result += calcDirLight(lights[i], norm, viewDir);
+            }
+            else if (lights[i].type == 1) {
+                result += calcPointLight(lights[i], norm, viewDir);
+            }
+            else if (lights[i].type == 2) {
+                result += calcSpotLight(lights[i], norm, viewDir);
+            } else {
+                // Unsupported light type, skip
+                continue;
+            }
+        }
 
-    FragColor = vec4(result, 1.0f);
+        if (emission)
+        {
+            float borderWidth = 0.1f;
+            float mask = step(borderWidth, TexCoords.x)
+            * step(TexCoords.x, 1.0f - borderWidth)
+            * step(borderWidth, TexCoords.y)
+            * step(TexCoords.y, 1.0f - borderWidth);
+            result += texture(material.emission, TexCoords).rgb * mask;
+        }
+
+        FragColor = vec4(result, 1.0f);
+    }
+}
+
+float LinearizeDepth(float depth)
+{
+    float z = depth * 2.0f - 1.0f;
+    return (2.0f * near * far) / (far + near - z * (far - near));
 }
 
 vec3 calcDirLight(Light light, vec3 normal, vec3 viewDir)
