@@ -38,6 +38,8 @@ uniform vec3 viewPos;
 uniform Light lights[30];
 uniform int lightCount;
 uniform bool showDepth;
+uniform bool outline;
+uniform vec3 outlineColor;
 
 float LinearizeDepth(float depth);
 float near = 0.1f;
@@ -50,9 +52,10 @@ vec3 calcSpotLight(Light light, vec3 normal, vec3 viewDir);
 void main() {
     if (showDepth)
     {
-
         float depth = LinearizeDepth(gl_FragCoord.z) / far;
         FragColor = vec4(vec3(depth), 1.0f);
+    } else if (outline) {
+        FragColor = vec4(outlineColor, 1.0f);
     } else {
         vec3 norm = normalize(Normal);
         vec3 viewDir = normalize(viewPos - FragPos);

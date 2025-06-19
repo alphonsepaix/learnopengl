@@ -67,10 +67,11 @@ void Application::mainLoop() {
 
   m_state.depthTesting ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
   glDepthFunc(m_state.depthFn);
+  glEnable(GL_STENCIL_TEST);
 
   const auto &bgColor = m_window.getBgColor();
   glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   const auto viewPos = m_cameraManager.getActiveCamera()->getPosition();
   const auto view = m_cameraManager.getActiveCamera()->lookAt();

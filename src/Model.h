@@ -1,9 +1,9 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include <assimp/scene.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
-#include <assimp/scene.h>
 
 #include "Shader.h"
 #include "Texture.h"
@@ -12,85 +12,91 @@
 #include <vector>
 
 struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 texCoords;
+  glm::vec3 position;
+  glm::vec3 normal;
+  glm::vec2 texCoords;
 };
 
 class Mesh {
 public:
-    Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices,
-         const std::vector<std::shared_ptr<Texture> > &textures);
+  Mesh(const std::vector<Vertex> &vertices,
+       const std::vector<unsigned int> &indices,
+       const std::vector<std::shared_ptr<Texture>> &textures);
 
-    ~Mesh();
+  ~Mesh();
 
-    // better raii
-    Mesh(const Mesh &) = delete;
+  // better raii
+  Mesh(const Mesh &) = delete;
 
-    Mesh &operator=(const Mesh &) = delete;
+  Mesh &operator=(const Mesh &) = delete;
 
-    Mesh(Mesh &&other) noexcept;
+  Mesh(Mesh &&other) noexcept;
 
-    Mesh &operator=(Mesh &&other) noexcept;
+  Mesh &operator=(Mesh &&other) noexcept;
 
-    void draw(Shader *shader) const;
+  void draw(Shader *shader) const;
 
 private:
-    GLuint m_vao{}, m_vbo{}, m_ebo{};
-    std::vector<Vertex> m_vertices;
-    std::vector<unsigned int> m_indices;
-    std::vector<std::shared_ptr<Texture> > m_textures;
+  GLuint m_vao{}, m_vbo{}, m_ebo{};
+  std::vector<Vertex> m_vertices;
+  std::vector<unsigned int> m_indices;
+  std::vector<std::shared_ptr<Texture>> m_textures;
 
-    void setupMesh();
+  void setupMesh();
 };
 
 class Model {
 public:
-    explicit Model(const std::string &path);
+  explicit Model(const std::string &path);
 
-    void draw(Shader *shader) const;
+  void draw(Shader *shader) const;
 
 private:
-    std::vector<Mesh> m_meshes;
-    std::string m_directory;
+  std::vector<Mesh> m_meshes;
+  std::string m_directory;
 
-    void loadModel(const std::string &path);
+  void loadModel(const std::string &path);
 
-    void processNode(const aiNode *node, const aiScene *scene);
+  void processNode(const aiNode *node, const aiScene *scene);
 
-    Mesh processMesh(aiMesh *mesh, const aiScene *scene) const;
+  Mesh processMesh(aiMesh *mesh, const aiScene *scene) const;
 
-    std::vector<std::shared_ptr<Texture> > loadMaterialTextures(const aiMaterial *mat, aiTextureType type) const;
+  std::vector<std::shared_ptr<Texture>>
+  loadMaterialTextures(const aiMaterial *mat, aiTextureType type) const;
 };
 
 struct ModelMatrix {
-    glm::vec3 translation = glm::vec3(0.0f);
-    glm::vec3 rotation = glm::vec3(0.0f); // in degrees
-    float scale = 1.0f;
+  glm::vec3 translation = glm::vec3(0.0f);
+  glm::vec3 rotation = glm::vec3(0.0f); // in degrees
+  float scale = 1.0f;
 
-    [[nodiscard]] std::pair<glm::mat4, glm::mat3> compute() const;
+  [[nodiscard]] std::pair<glm::mat4, glm::mat3> compute() const;
 };
 
 class ModelManager {
 public:
-    ModelManager();
+  ModelManager();
 
-    void widgets();
+  void widgets();
 
-    void draw(Shader *shader) const;
+  void draw(Shader *shader) const;
 
 private:
-    struct ObjectData {
-        std::shared_ptr<Model> object;
-        ModelMatrix model;
-        bool active;
-    };
+  struct ObjectData {
+    std::shared_ptr<Model> object;
+    ModelMatrix model;
+    bool active;
+    bool outline;
+  };
 
-    std::vector<ObjectData> m_objects;
-    std::unordered_map<std::string, std::weak_ptr<Model> > m_loadedModels;
-    Texture m_emission;
+  std::vector<ObjectData> m_objects;
+  std::unordered_map<std::string, std::weak_ptr<Model>> m_loadedModels;
+  Texture m_emission;
 
-    void loadObject(const std::string &path);
+  int mOutlinePct = 3; // in %
+  glm::vec4 mOutlineColor = glm::vec4(1.0f);
+
+  void loadObject(const std::string &path);
 };
 
 #endif
