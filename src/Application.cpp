@@ -10,7 +10,9 @@
 
 #include <array>
 
-const std::string SHADER_DIR = "assets/shaders/";
+const std::string ASSETS_DIR = "assets/";
+const std::string SHADER_DIR = ASSETS_DIR + "shaders/";
+const std::string TEXTURE_DIR = ASSETS_DIR + "textures/";
 
 constexpr auto UNLOCK_KEY = GLFW_KEY_LEFT_SHIFT;
 constexpr auto FORWARD_KEY = GLFW_KEY_W;
@@ -21,12 +23,11 @@ constexpr auto UP_KEY = GLFW_KEY_SPACE;
 constexpr auto DOWN_KEY = GLFW_KEY_LEFT_CONTROL;
 constexpr auto EXIT_KEY = GLFW_KEY_ESCAPE;
 
-Application::Application() : m_window{this} {
+Application::Application() : m_window{this}, m_grassTexture(TEXTURE_DIR + "grass.png") {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  ;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;;
   ImGui_ImplGlfw_InitForOpenGL(m_window.getHandle(), true);
   ImGui_ImplOpenGL3_Init("#version 330 core");
 
@@ -44,7 +45,37 @@ Application::Application() : m_window{this} {
 
   m_lightManager.add(std::make_unique<DirectionalLight>(glm::vec3(-1.0f)));
   m_lightManager.add(
-      std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));
+    std::make_unique<PointLight>(glm::vec3(1.0f, 2.0f, -2.0f)));
+
+  // Grass rendering setup.
+  m_grassTexture.setWrap(Texture::Wrap::ClampToEdge, Texture::Wrap::ClampToEdge);
+  m_transparentVertices = {
+    0.0f, 0.5f, 0.0f, 0.0f, 0.0f,
+    0.0f, -0.5f, 0.0f, 0.0f, 1.0f,
+    1.0f, -0.5f, 0.0f, 1.0f, 1.0f,
+
+    0.0f, 0.5f, 0.0f, 0.0f, 0.0f,
+    1.0f, -0.5f, 0.0f, 1.0f, 1.0f,
+    1.0f, 0.5f, 0.0f, 1.0f, 0.0f
+  };
+  glGenVertexArrays(1, &m_transparentVao);
+  glGenBuffers(1, &m_transparentVbo);
+  glBindVertexArray(m_transparentVao);
+  glBindBuffer(GL_ARRAY_BUFFER, m_transparentVbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(m_transparentVertices), m_transparentVertices.data(), GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(nullptr));
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+  glBindVertexArray(0);
+  m_vegetationPos =
+  {
+    glm::vec3(-1.5f, 0.0f, -0.48f),
+    glm::vec3(1.5f, 0.0f, 0.51f),
+    glm::vec3(0.0f, 0.0f, 0.7f),
+    glm::vec3(-0.3f, 0.0f, -2.3f),
+    glm::vec3(0.5f, 0.0f, -0.6f)
+  };
 }
 
 Application::~Application() {
@@ -62,8 +93,9 @@ void Application::mainLoop() {
 
   widgets();
 
-  m_state.wireframe ? glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-                    : glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  m_state.wireframe
+    ? glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+    : glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   m_state.depthTesting ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
   glDepthFunc(m_state.depthFn);
@@ -78,7 +110,7 @@ void Application::mainLoop() {
   const auto projection =
       glm::perspective(glm::radians(m_cameraManager.getFov()),
                        static_cast<float>(m_window.getWidth()) /
-                           static_cast<float>(m_window.getHeight()),
+                       static_cast<float>(m_window.getHeight()),
                        0.1f, 100.0f);
 
   // Render the light sources.
@@ -100,6 +132,20 @@ void Application::mainLoop() {
   objectShader->setBool("showDepth", m_state.showDepth);
   m_lightManager.setShaderUniforms(objectShader.get());
   m_modelManager.draw(objectShader.get());
+
+  // Render grass (blending example).
+  objectShader->use();
+  m_grassTexture.setUnit(0);
+  objectShader->setInt("grass", 0);
+  objectShader->setBool("isGrass", true);
+  glBindVertexArray(m_transparentVao);
+  for (auto pos: m_vegetationPos) {
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, pos);
+    objectShader->setMat4("model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+  }
+  objectShader->setBool("isGrass", false);
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -150,7 +196,8 @@ void Application::widgets() {
   ImGui::Checkbox("Depth testing", &m_state.depthTesting);
   if (m_state.depthTesting) {
     constexpr std::array<std::pair<const char *, GLenum>, 3> depthFuncs = {
-        {{"Less", GL_LESS}, {"Always", GL_ALWAYS}, {"Greater", GL_GREATER}}};
+      {{"Less", GL_LESS}, {"Always", GL_ALWAYS}, {"Greater", GL_GREATER}}
+    };
     int fnIndex = 0;
     for (auto i = 0; i < depthFuncs.size(); ++i) {
       if (depthFuncs[i].second == m_state.depthFn) {

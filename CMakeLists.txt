@@ -69,7 +69,6 @@ target_include_directories(imgui PUBLIC
 find_package(OpenGL REQUIRED)
 target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
 
-
 file(GLOB_RECURSE SOURCES src/*.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 

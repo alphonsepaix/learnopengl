@@ -40,6 +40,9 @@ uniform int lightCount;
 uniform bool showDepth;
 uniform bool outline;
 uniform vec3 outlineColor;
+uniform bool isGrass;
+
+uniform sampler2D grass;
 
 float LinearizeDepth(float depth);
 float near = 0.1f;
@@ -50,7 +53,13 @@ vec3 calcPointLight(Light light, vec3 normal, vec3 viewDir);
 vec3 calcSpotLight(Light light, vec3 normal, vec3 viewDir);
 
 void main() {
-    if (showDepth)
+    if (isGrass)
+    {
+        vec4 texColor = texture(grass, TexCoords);
+        if (texColor.a < 0.1) discard;
+        FragColor = texColor;
+    }
+    else if (showDepth)
     {
         float depth = LinearizeDepth(gl_FragCoord.z) / far;
         FragColor = vec4(vec3(depth), 1.0f);

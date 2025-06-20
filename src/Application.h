@@ -6,6 +6,8 @@
 #include "Model.h"
 #include "Window.h"
 
+#include <array>
+
 struct AppState {
   float deltaTime = 0.0f;
   float deltaTimeAdded = 0.0f;
@@ -54,7 +56,13 @@ private:
   LightManager m_lightManager;
   ModelManager m_modelManager;
   AppState m_state;
-  std::unordered_map<std::string, std::unique_ptr<Shader>> m_shaders;
+  std::unordered_map<std::string, std::unique_ptr<Shader> > m_shaders;
+
+  // grass
+  Texture m_grassTexture;
+  std::array<float, 30> m_transparentVertices;
+  std::array<glm::vec3, 5> m_vegetationPos;
+  GLuint m_transparentVao, m_transparentVbo;
 
   void widgets();
 
